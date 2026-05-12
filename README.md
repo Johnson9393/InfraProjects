@@ -1,49 +1,82 @@
 # InfraProjects
 
-This repository contains multiple applications deployed on AWS using production-grade architecture patterns. It demonstrates both 3-tier and evolving microservices-based design with a focus on scalability, security, and clean service separation.
+A centralized DevOps and Cloud Engineering repository containing multiple production-style applications, infrastructure concepts, and deployment workflows built using real-world architecture patterns.
+
+This repository focuses on hands-on implementation of scalable, secure, and production-oriented application deployment practices.
 
 ---
 
-## Applications
+# Applications
 
-- PortfolioApp  
-- StudentProfileApp  
+* PortfolioApp
+* StudentProfileApp
 
-Each application is independently structured and deployable.
-
----
-
-## Architecture
-
-User → DNS (Route 53) → Nginx (Reverse Proxy) → Gunicorn → Flask Services
-
-- Nginx handles routing, reverse proxy, and entry point  
-- Gunicorn runs backend services on internal ports  
-- Applications are isolated and can scale independently  
+Each project is independently structured, containerized, and deployable.
 
 ---
 
-## Production Best Practices
+# Tech Stack
 
-- Reverse proxy architecture using Nginx  
-- Separation of concerns (web, app, service layers)  
-- HTTPS enforced using SSL (Certbot)  
-- Systemd services for process management (Gunicorn)  
-- Domain routing via Route 53  
-- Modular structure enabling microservices expansion  
-
----
-
-## How This Is Achieved
-
-- Applications run on EC2 instances  
-- Nginx routes external traffic to internal services  
-- Gunicorn serves Flask apps securely on localhost  
-- SSL certificates enable encrypted communication  
-- Each service is independently deployable and extendable  
+* AWS
+* Docker
+* Docker Compose
+* Python / Flask
+* PostgreSQL
+* Nginx
+* Gunicorn
+* Terraform
+* Ansible
+* GitHub Actions
+* Linux
 
 ---
 
-## Summary
+# Production Practices Implemented
 
-This project demonstrates a clean, scalable, and production-ready approach to deploying applications on AWS, aligned with real-world DevOps practices.
+* Reverse proxy architecture using Nginx
+* Containerized application deployment
+* Multi-container communication using Docker networks
+* Persistent database storage using Docker volumes
+* Environment-based configuration management
+* HTTPS and SSL-based secure communication
+* Health checks and startup dependency handling
+* Runtime process management with Gunicorn
+* Infrastructure provisioning using Terraform
+* Configuration management using Ansible
+* OIDC-based CI/CD authentication concepts
+* Modular and scalable project structure
+
+---
+
+# Architecture Style
+
+```text id="jlwm408"
+User
+  ↓
+DNS / Reverse Proxy
+  ↓
+Application Services
+  ↓
+Database Layer
+```
+
+Applications are designed following layered deployment and production-style infrastructure practices similar to real-world environments.
+
+---
+
+# Repository Goal
+
+This repository is built to practice and implement:
+
+* Production-grade deployments
+* Cloud and DevOps concepts
+* Containerization workflows
+* Infrastructure automation
+* Application scalability and isolation
+* Real-world troubleshooting and debugging
+
+---
+
+# Summary
+
+InfraProjects demonstrates practical implementation of modern DevOps, cloud, and containerization concepts using production-style architecture patterns and real-world deployment workflows.
