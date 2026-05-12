@@ -1,245 +1,528 @@
-# StudentLMSApp
+# Docker Two-Tier Application Setup (Flask + PostgreSQL)
 
-StudentLMSApp is a Flask-based 3-tier application to manage students and track attendance.
-Deployed on AWS EC2 using Nginx, Gunicorn, and PostgreSQL.
+# Objective
 
----
+Run a Flask application and PostgreSQL database using Docker containers with:
 
-## Application Setup
+* Custom Docker network
+* Docker named volume
+* Persistent PostgreSQL storage
+* Container-to-container communication
+* Port forwarding
 
-```bash id="g2q4p7"
-cd StudentProfileApp   # move into project directory
-
-python3 -m venv .venv  # create virtual environment
-source .venv/bin/activate  # activate environment
-
-pip install -r requirements.txt  # install dependencies
-```
+This setup simulates a real-world two-tier application architecture.
 
 ---
 
-## Database Setup (PostgreSQL)
+# Architecture
 
----
-
-### Install PostgreSQL
-
-```bash id="z9z3n8"
-sudo dnf install postgresql15-server postgresql15 -y   # install postgres server + client
-
-sudo postgresql-setup --initdb   # initialize database cluster
-
-sudo systemctl enable postgresql --now   # start and enable service
-
-sudo systemctl status postgresql   # verify service is running
+```text
+Browser
+   ↓
+localhost:8081
+   ↓
+Student App Container
+   ↓
+Docker Network (app-network)
+   ↓
+PostgreSQL Container
+   ↓
+Named Volume (pgdata)
 ```
 
 ---
 
-### Create Database
+# Important Docker Concepts Used
 
-```bash id="s7o3jw"
-psql -U postgres -h localhost   # connect to postgres shell
+## Docker Network
+
+Used for container-to-container communication.
+
+Docker embedded DNS automatically resolves:
+
+```text
+postgres-db → PostgreSQL container IP
 ```
 
-```sql id="y2b45v"
-ALTER USER postgres WITH PASSWORD 'password';   -- set DB password for app auth
+so application communicates using container name instead of IP address.
 
-CREATE DATABASE mydb;   -- create application database
+---
 
-\l   -- list databases
+## Docker Named Volume
 
-\q   -- exit postgres shell
+Used for persistent PostgreSQL data storage.
+
+Even if PostgreSQL container is deleted:
+
+```text
+Database data remains safe inside volume.
 ```
 
 ---
 
-### Configure Authentication
+# Step 1 — Create Docker Network
 
-Switch from `ident` → `md5` to allow password-based login from apps.
-
-```bash id="nq1i0p"
-sudo vi /var/lib/pgsql/data/pg_hba.conf   # open auth config file
+```bash
+docker network create app-network
 ```
 
-```text id="3i2jzn"
-host    all    all    127.0.0.1/32    md5
-host    all    all    ::1/128         md5
+Verify:
+
+```bash
+docker network ls
 ```
 
-```bash id="3u6g9h"
-sudo systemctl restart postgresql   # apply auth changes
-```
+Purpose:
 
----
-
-### Test DB
-
-```bash id="j7z1lw"
-export DB_LINK="postgresql://postgres:password@localhost:5432/mydb"   # connection string
-
-psql $DB_LINK   # test DB connectivity
+```text
+Allows app container and postgres container to communicate securely.
 ```
 
 ---
 
-## Run Application
+# Step 2 — Create Docker Named Volume
 
-```bash id="q1f87u"
-export DB_LINK="postgresql://postgres:password@localhost:5432/mydb"   # set env variable
-
-python run.py   # start flask app (dev server)
+```bash
+docker volume create pgdata
 ```
 
-```bash id="6qzq2x"
-curl localhost:8000   # test app response
+Verify:
+
+```bash
+docker volume ls
 ```
 
----
+Purpose:
 
-## Gunicorn (Production)
-
-```bash id="3k6w3n"
-gunicorn app:app --bind 127.0.0.1:8000   # run production WSGI server
-```
-
----
-
-## Gunicorn Service
-
-```bash id="7w0w0v"
-sudo vi /etc/systemd/system/gunicorn.service   # create service file
-```
-
-```ini id="0s1n0q"
-[Unit]
-Description=Gunicorn service
-After=network.target
-
-[Service]
-User=ec2-user
-WorkingDirectory=/home/ec2-user/StudentProfileApp
-Environment="PATH=/home/ec2-user/StudentProfileApp/.venv/bin"
-Environment="DB_LINK=postgresql://postgres:password@localhost:5432/mydb"
-
-ExecStart=/home/ec2-user/StudentProfileApp/.venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 app:app   # start gunicorn
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash id="l6kq5l"
-sudo systemctl daemon-reload   # reload systemd configs
-sudo systemctl start gunicorn   # start service
-sudo systemctl enable gunicorn   # enable on boot
+```text
+Stores PostgreSQL data outside container filesystem for persistence.
 ```
 
 ---
 
-## Nginx Configuration
+# Step 3 — Run PostgreSQL Container
 
-```bash id="q7o6yx"
-sudo vi /etc/nginx/nginx.conf   # open nginx config
-```
-
-```nginx id="x3r0s5"
-server {
-    listen 80;
-    server_name your-domain;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;   # forward traffic to backend app
-    }
-}
-```
-
-```bash id="s0z8lu"
-sudo systemctl restart nginx   # apply nginx config
+```bash
+docker run -d \
+--name postgres-db \
+--network app-network \
+-e POSTGRES_USER=postgres \
+-e POSTGRES_PASSWORD=password \
+-e POSTGRES_DB=studentdb \
+-v pgdata:/var/lib/postgresql/data \
+postgres:16
 ```
 
 ---
 
-## HTTPS Setup (Certbot)
+# Explanation
 
-```bash id="7t3h0d"
-sudo dnf install certbot python3-certbot-nginx -y   # install certbot
-```
+## `-d`
 
-```bash id="7c5f9x"
-sudo certbot --nginx \
--d your-domain \
--d www.your-domain   # generate SSL + auto configure nginx
-```
+Runs container in background.
 
-```nginx id="y3f9a6"
-return 301 https://$host$request_uri;   # redirect HTTP → HTTPS
-```
+---
 
-```bash id="v3p7xn"
-sudo certbot renew --dry-run   # test auto renewal
+## `--name postgres-db`
+
+Custom container name.
+
+Used as DNS hostname inside Docker network.
+
+---
+
+## `--network app-network`
+
+Attaches container to custom Docker network.
+
+---
+
+## `-e`
+
+Sets environment variables.
+
+```text
+POSTGRES_USER      → DB username
+POSTGRES_PASSWORD  → DB password
+POSTGRES_DB        → Initial database
 ```
 
 ---
 
-## Database Backup
+## `-v pgdata:/var/lib/postgresql/data`
 
-```bash id="6k4k3g"
-export DB_LINK="postgresql://postgres:password@localhost:5432/mydb"
+Mounts Docker named volume.
 
-pg_dump -Fc $DB_LINK -f /tmp/mydb_$(date +%Y%m%d_%H%M%S).dump   # create compressed backup
-
-ls -lh /tmp/mydb_*.dump   # verify dump file
+```text
+pgdata → Docker-managed persistent storage
 ```
 
-```bash id="z3r8su"
-# pick latest dump file automatically
-# ls -t → latest first | head -1 → pick newest
-DUMP_FILE=$(ls -t /tmp/mydb_*.dump | head -1)
+mounted into PostgreSQL actual data directory.
 
-echo $DUMP_FILE   # print selected file
+---
+
+## `postgres:16`
+
+Uses fixed PostgreSQL version.
+
+Production best practice is to pin image versions instead of using latest.
+
+---
+
+# Step 4 — Verify PostgreSQL Running
+
+```bash
+docker ps
+```
+
+Check logs:
+
+```bash
+docker logs postgres-db
+```
+
+Expected:
+
+```text
+database system is ready to accept connections
 ```
 
 ---
 
-## Backup to S3
+# Step 5 — Configure Flask Database Connection
 
-S3 is used for durable backup storage.
+Inside Flask application config:
 
-IAM Role is preferred over `aws configure` because:
+```python
+SQLALCHEMY_DATABASE_URI = "postgresql://postgres:password@postgres-db:5432/studentdb"
+```
 
-* No static credentials
-* More secure
-* Auto rotation
+Important:
 
-```bash id="k8l1r9"
-aws s3 cp $DUMP_FILE s3://your-bucket-name/backups/   # upload dump to S3
+```text
+postgres-db = container hostname
+```
 
-aws s3 ls s3://your-bucket-name/backups/   # verify upload
+Docker DNS automatically resolves it.
+
+---
+
+# Why NOT localhost?
+
+Inside containers:
+
+```text
+localhost = the container itself
+```
+
+NOT host machine.
+
+Therefore application container cannot use:
+
+```text
+localhost:5432
+```
+
+to reach PostgreSQL container.
+
+---
+
+# Step 6 — Build Flask Application Image
+
+From application directory:
+
+```bash
+docker build -t sp-app:1.0 .
+```
+
+Verify:
+
+```bash
+docker images
 ```
 
 ---
 
-## Restore Database
+# Step 7 — Run Application Container
 
-```bash id="y2o8b6"
-aws s3 cp s3://your-bucket-name/backups/your-file.dump /tmp/restore.dump   # download backup
-
-psql -U postgres -c "DROP DATABASE IF EXISTS mydb;"   # drop existing DB
-psql -U postgres -c "CREATE DATABASE mydb;"   # recreate DB
-
-pg_restore -Fc -d $DB_LINK /tmp/restore.dump   # restore backup
-
-psql $DB_LINK -c "\dt"   # verify tables
+```bash
+docker run -d \
+--name student-app \
+--network app-network \
+-p 8081:8000 \
+sp-app:1.0 \
+python run.py
 ```
 
 ---
 
-## Summary
+# Explanation
 
-* Flask → Application
-* Gunicorn → Production server
-* Nginx → Reverse proxy
-* PostgreSQL → Database
-* Certbot → HTTPS
-* S3 → Backup storage
+## `-p 8081:8000`
+
+Port forwarding.
+
+```text
+Host Port      → Container Port
+8081           → 8000
+```
+
+Application becomes accessible at:
+
+```text
+http://localhost:8081
+```
+
+---
+
+## `python run.py`
+
+Overrides default Docker CMD.
+
+Used because:
+
+```python
+db.create_all()
+```
+
+exists inside:
+
+```python
+if __name__ == "__main__":
+```
+
+and executes only when running:
+
+```text
+python run.py
+```
+
+---
+
+# Step 8 — Verify Application
+
+Check running containers:
+
+```bash
+docker ps
+```
+
+Check logs:
+
+```bash
+docker logs student-app
+```
+
+Open browser:
+
+```text
+http://localhost:8081
+```
+
+Test:
+
+* User registration
+* Login
+* Database operations
+
+---
+
+# Step 9 — Verify Persistent Storage
+
+Remove PostgreSQL container:
+
+```bash
+docker rm -f postgres-db
+```
+
+Recreate container using SAME volume:
+
+```bash
+docker run -d \
+--name postgres-db \
+--network app-network \
+-e POSTGRES_USER=postgres \
+-e POSTGRES_PASSWORD=password \
+-e POSTGRES_DB=studentdb \
+-v pgdata:/var/lib/postgresql/data \
+postgres:16
+```
+
+Result:
+
+```text
+All database data still exists.
+```
+
+Why?
+
+Because:
+
+```text
+Data stored inside named volume, not container filesystem.
+```
+
+---
+
+# Important Real-World Concepts
+
+## Containers are Ephemeral
+
+If data stored only inside container:
+
+```text
+Deleting container = losing data
+```
+
+---
+
+## Named Volumes Solve Persistence
+
+Volumes survive:
+
+* Container deletion
+* Container recreation
+* Application restarts
+
+---
+
+# Docker Networking Concept
+
+Containers inside same custom network communicate using:
+
+```text
+Container names
+```
+
+instead of IP addresses.
+
+Example:
+
+```text
+student-app → postgres-db
+```
+
+---
+
+# Common Debugging Commands
+
+## Running Containers
+
+```bash
+docker ps
+```
+
+---
+
+## All Containers
+
+```bash
+docker ps -a
+```
+
+---
+
+## Container Logs
+
+```bash
+docker logs <container-name>
+```
+
+---
+
+## Inspect Network
+
+```bash
+docker network inspect app-network
+```
+
+---
+
+## Inspect Volume
+
+```bash
+docker volume inspect pgdata
+```
+
+---
+
+# Common Issues Faced
+
+## Using localhost for DB
+
+Problem:
+
+```text
+Connection refused
+```
+
+Reason:
+
+```text
+localhost inside container points to same container.
+```
+
+Fix:
+
+```text
+Use postgres container name.
+```
+
+---
+
+## PostgreSQL Version Mismatch
+
+Problem:
+
+```text
+Old volume incompatible with new postgres image
+```
+
+Fix:
+
+```bash
+docker volume rm pgdata
+```
+
+and recreate clean volume.
+
+---
+
+# Interview One-Liners
+
+## Docker Network
+
+```text
+Custom Docker bridge networks provide built-in DNS-based container communication using container names.
+```
+
+---
+
+## Docker Named Volume
+
+```text
+Docker named volumes provide persistent Docker-managed storage independent from container lifecycle.
+```
+
+---
+
+## Why Use Volumes?
+
+```text
+Containers are ephemeral, so persistent data like databases should always use volumes.
+```
+
+---
+
+# Final Learning Outcome
+
+This setup demonstrates real-world Docker concepts:
+
+* Multi-container applications
+* Persistent storage
+* Docker networking
+* Service discovery
+* Container isolation
+* Database persistence
+* Runtime debugging
+* Production-style architecture

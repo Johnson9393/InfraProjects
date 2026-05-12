@@ -1,0 +1,6 @@
+.venv
+.vscode
+*.conf
+nginx.conf_bckp
+*.md
+Dockerfile
