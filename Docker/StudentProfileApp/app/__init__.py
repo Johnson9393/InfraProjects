@@ -60,5 +60,6 @@ def create_app():
 
         app.register_blueprint(routes.bp)
         app.register_blueprint(auth.auth_bp)
+        db.create_all()
 
     return app
