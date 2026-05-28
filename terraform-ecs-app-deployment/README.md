@@ -152,5 +152,7 @@ Add the following to infra/.gitignore:
 *.tfvars
 .terraform.lock.hcl
 ```
+> **Note:** `.terraform.lock.hcl` is committed to the repository to maintain consistent Terraform provider versions across different environments and team members.
+
 
 
