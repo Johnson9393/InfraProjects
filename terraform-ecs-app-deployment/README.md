@@ -141,5 +141,16 @@ terraform {
   }
 }
 ```
+Run terraform init and confirm the .terraform/ folder and lock file are created.
+
+Add the following to infra/.gitignore:
+
+```text
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+```
 
 
