@@ -1,0 +1,50 @@
+name: Johnson
+city: Bangalore
+current role: QA Engineer
+desired role: Infra Engineer
+
+skills:
+  programming:
+    - Java
+    - JavaScript
+    - TypeScript
+  tech stack:
+    QA_tools:
+      - Selenium
+      - WebdriverIO
+      - playwright
+      - RestAssured
+      - Postman
+      - Jmeter
+      - K6
+      - appium
+    cloud(learning phase):
+      - AWS
+      - Terraform
+      - Docker
+      - Kubernetes
+      - Github Actions
+      - Linux, Networking
+
+hobbies:
+  - Travelling
+  - Gym
+  - Cricket, Badminton, Chess
+  - Cooking
+  - Reading
+  - Music
+  - Movies
+
+experience:
+  company: Thoughtworks
+  position: Senior QA Consultant
+  experience: 6+
+
+education:
+  degree: B.tech in Electronics and Communication
+
+
+
+
+
+
