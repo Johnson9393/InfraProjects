@@ -70,4 +70,29 @@ have also been added to the `app/` directory.
 
 ---
 
+# Rules for every submission
+
+* Never commit .terraform/, *.tfstate, *.tfstate.backup, or .env files — add them to .gitignore before your first push
+* Run terraform fmt before committing any .tf file
+* Run terraform validate before running terraform plan
+* Always terraform destroy after testing to avoid unnecessary AWS charges
+* Write a short commit message that describes what you did (e.g. add nat gateway and private route table)
+* — update the README as you go
+
+---
+
+# Task 1 - YAML warm-up
+
+Create a file called about_me.yaml in the root of the repo. This file demonstrates the three core YAML concepts 
+
+## File must include:
+
+* At least one dictionary (key-value pairs — name, city, role)
+* At least one list (hobbies, tools you use, or skills)
+* At least one nested structure (e.g. experience or education with sub-keys)
+
+Validate the file with a YAML linter (yamllint or any online tool) before committing.
+
+> **Why this matters:**
+> While writing Github Actions workflows in YAML we will be comfortable with indentation and structure now will save a lot of debugging later. 
 
