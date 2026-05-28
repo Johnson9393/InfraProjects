@@ -116,15 +116,13 @@ tfenv install 1.12.1
 tfenv use 1.12.1
 terraform version
 ```
-
 ---
 
-# Checklist:
+## Checklist:
 
-[x] tfenv installed and working
-[x] Terraform 1.12.1 active
-[x] `terraform version` shows 1.12.1
-
+* [x] tfenv installed and working
+* [x] Terraform 1.12.1 active
+* [x] `terraform version` shows 1.12.1
 ---
 
 
