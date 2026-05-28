@@ -102,23 +102,16 @@ Validate the file with a YAML linter (yamllint or any online tool) before commit
 
 Install tfenv and use it to manage Terraform versions.
 
+```bash
 ## Mac
-
-```bash id="xskmdk"
 brew install tfenv
-```
 
 ## WSL / Linux
-
-```bash id="w4zwpk"
 git clone https://github.com/tfutils/tfenv.git ~/.tfenv
 echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
-```
 
 ## Install and Activate Terraform Version
-
-```bash id="v3d9ng"
 tfenv install 1.12.1
 tfenv use 1.12.1
 terraform version
@@ -128,9 +121,9 @@ terraform version
 
 # Checklist:
 
-* [x] tfenv installed and working
-* [x] Terraform 1.12.1 active
-* [x] `terraform version` shows 1.12.1
+[x] tfenv installed and working
+[x] Terraform 1.12.1 active
+[x] `terraform version` shows 1.12.1
 
 ---
 
