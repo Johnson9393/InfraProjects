@@ -128,9 +128,9 @@ terraform version
 
 # Checklist:
 
-* [ ] tfenv installed and working
-* [ ] Terraform 1.12.1 active
-* [ ] `terraform version` shows 1.12.1
+* [x] tfenv installed and working
+* [x] Terraform 1.12.1 active
+* [x] `terraform version` shows 1.12.1
 
 ---
 
