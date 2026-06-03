@@ -155,4 +155,39 @@ Add the following to infra/.gitignore:
 > **Note:** `.terraform.lock.hcl` is committed to the repository to maintain consistent Terraform provider versions across different environments and team members.
 
 
+# Task 4 - Build the full VPC using Terraform
+
+## Resources to create:
+
+* VPC with enable_dns_hostnames = true and enable_dns_support = true
+* 2 public subnets across two availability zones
+* 2 private subnets across two availability zones
+* 2 database subnets (separate CIDR range — keep RDS isolated)
+* Create IGW and attach to vpc to access internet from public
+* EIP and NAT for Private subnets to access internet
+* Create public route table with route to IGW and associate with public subnets
+* Create private route table with route to NGW and associate with private subnets
+
+## Reference Flow:
+
+```text
+Public subnets  → Public route table  → Internet Gateway  → Internet
+Private subnets → Private route table → NAT Gateway → Internet
+DB subnets      → No outbound route   → VPC-internal only
+```
+## Commands to validate and apply VPC on aws
+
+```bash
+terraform fmt
+terraform validate
+terraform plan
+terraform apply
+```
+
+
+
+
+
+
+
 
