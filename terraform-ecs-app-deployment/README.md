@@ -232,12 +232,47 @@ terraform {
 
 * Run terraform init -migrate-state and confirm the state file appears in S3
 * Run terraform state list and paste the output in your README as a code block
+* To verify object in s3 use `terraform state pull`
+* Image attached and can be check the output in image.png in the infra/ folder
 
 ```hcl
 ![alt text](image.png)
 ```
 
+> **Note:** With versioning enabled on the bucket you can recover a deleted or corrupted state file. Always enable this.
 
+---
+
+# Task 7 - Create security group for ECS, ALB, RDS
+
+Create sg.tf with 3 secuirty groups. 
+
+| Security Group | Inbound Rule | Source |
+|---------------|-------------|---------|
+| ALB SG | Port 80 and 443 | `0.0.0.0/0` (public-facing) |
+| ECS SG | Port 8000 (app port) | ALB SG only |
+| RDS SG | Port 5432 (Postgres) | ECS SG only |
+
+> This reflects the real traffic flow: Internet → ALB → ECS Task → RDS. Each layer only accepts traffic from the layer above it.
+
+---
+
+# Task 8 - Create RDS and secrets manager entry to store rds creds
+
+Create rds.tf with:
+
+* A random password using the random provider (alpha-numeric only — no special characters to avoid connection string issues)
+* A DB subnet group using your database subnets
+* A aws_db_instance resource (Postgres, db.t3.micro, single instance, no backup retention for cost saving)
+* A aws_secretsmanager_secret and aws_secretsmanager_secret_version that stores the full DB connection string including username, password, host, port, and DB name
+
+The secret string format should match what your app expects:
+
+```
+postgresql://username:password@host:5432/dbname
+```
+
+> **Note**: Use aws_db_instance outputs to build the connection string dynamically — do not hardcode the endpoint.
 
 
 
