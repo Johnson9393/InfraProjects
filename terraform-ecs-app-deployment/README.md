@@ -183,6 +183,60 @@ terraform validate
 terraform plan
 terraform apply
 ```
+---
+
+## Task 5 - Create provider.tf
+
+Created a `provider.tf` file to explicitly configure the AWS provider and apply default tags to all supported AWS resources.
+
+### provider.tf
+
+```hcl
+provider "aws" {
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      managed_by = "terraform"
+      project    = "bootcamp"
+    }
+  }
+}
+```
+
+### Key Points
+
+* Centralized AWS provider configuration by defining the AWS region and provider settings in a dedicated file.
+* Applied default tags (`managed_by = "terraform"` and `project = "bootcamp"`) to ensure consistent resource tagging across the infrastructure.
+
+---
+
+# Task 6 - configure remote state in S3
+
+Move state from local to s3
+
+* Create an S3 bucket and enable the version
+* Add the backend block in versions.tf
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket       = "sp-state-bucket"
+    key          = "infra/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
+  }
+}
+```
+
+* Run terraform init -migrate-state and confirm the state file appears in S3
+* Run terraform state list and paste the output in your README as a code block
+
+```hcl
+![alt text](image.png)
+```
+
 
 
 
