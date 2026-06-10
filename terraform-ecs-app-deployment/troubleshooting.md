@@ -22,6 +22,8 @@
 * Fixed above issues by deleting existing role that created manually
 * updated db name with no hypens, underscores and spaces
 
+---
+
 # Issue 2 
 ```hcl
 ╷
@@ -48,6 +50,7 @@
 ```
 ----
 
+
 # Succesfully Deployed an app and below are the snippets attached
 
 ![alt text](screenshots/AlbHealthStatus.png)
@@ -64,6 +67,8 @@ While registering got 500 Internal Server error
 ![alt text](screenshots/ErrorLogs.png)
 
 * Error says - DB schema is not created as DB initilaization code is the main block in run.py which dont exceute with gunicorn. Hence updated the code with `db.create_all()` in _init_.py file in `app.app_context()` function block
+
+---
 
 
 
