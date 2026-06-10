@@ -5,7 +5,6 @@ resource "aws_vpc" "sp_vpc" {
   cidr_block           = var.vpc_cidr_block
   enable_dns_hostnames = true
   enable_dns_support   = true
-  provider             = aws
   region               = var.aws_region
 
   tags = {

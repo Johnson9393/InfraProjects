@@ -195,7 +195,7 @@ docker build --platform linux/amd64 \
 ## Step 9: Log in to ECR and push
 
 ```bash
-aws ecr get-login-password --region ap-south-1 | \
+aws ecr get-login-password --region us-east-1 | \
   docker login --username AWS --password-stdin <account_id>.dkr.ecr.ap-south-1.amazonaws.com
 ```
 

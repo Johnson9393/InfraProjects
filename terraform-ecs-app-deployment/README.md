@@ -28,7 +28,7 @@ terraform-ecs-app-deployment/
 │   └── src/                       # Your two-tier app code
 ├── .github/
 │   └── workflows/
-│       └── build-and-deploy.yml   
+│       └── build-and-deploy.yml
 └── README.md
 ```
 
@@ -38,15 +38,15 @@ terraform-ecs-app-deployment/
 
 This project will include:
 
-* AWS VPC Infrastructure
-* ECS Fargate Deployment
-* Application Load Balancer
-* PostgreSQL RDS
-* Route53 DNS
-* ACM SSL Certificate
-* Amazon ECR
-* GitHub Actions CI/CD
-* Terraform Remote Backend
+- AWS VPC Infrastructure
+- ECS Fargate Deployment
+- Application Load Balancer
+- PostgreSQL RDS
+- Route53 DNS
+- ACM SSL Certificate
+- Amazon ECR
+- GitHub Actions CI/CD
+- Terraform Remote Backend
 
 ---
 
@@ -60,11 +60,11 @@ app/src/
 
 Required application files such as:
 
-* Dockerfile
-* requirements.txt
-* docker-compose.yml
-* config.py
-* run.py
+- Dockerfile
+- requirements.txt
+- docker-compose.yml
+- config.py
+- run.py
 
 have also been added to the `app/` directory.
 
@@ -72,29 +72,29 @@ have also been added to the `app/` directory.
 
 # Rules for every submission
 
-* Never commit .terraform/, *.tfstate, *.tfstate.backup, or .env files — add them to .gitignore before your first push
-* Run terraform fmt before committing any .tf file
-* Run terraform validate before running terraform plan
-* Always terraform destroy after testing to avoid unnecessary AWS charges
-* Write a short commit message that describes what you did (e.g. add nat gateway and private route table)
-* — update the README as you go
+- Never commit .terraform/, _.tfstate, _.tfstate.backup, or .env files — add them to .gitignore before your first push
+- Run terraform fmt before committing any .tf file
+- Run terraform validate before running terraform plan
+- Always terraform destroy after testing to avoid unnecessary AWS charges
+- Write a short commit message that describes what you did (e.g. add nat gateway and private route table)
+- — update the README as you go
 
 ---
 
 # Task 1 - YAML warm-up
 
-Create a file called about_me.yaml in the root of the repo. This file demonstrates the three core YAML concepts 
+Create a file called about_me.yaml in the root of the repo. This file demonstrates the three core YAML concepts
 
 ## File must include:
 
-* At least one dictionary (key-value pairs — name, city, role)
-* At least one list (hobbies, tools you use, or skills)
-* At least one nested structure (e.g. experience or education with sub-keys)
+- At least one dictionary (key-value pairs — name, city, role)
+- At least one list (hobbies, tools you use, or skills)
+- At least one nested structure (e.g. experience or education with sub-keys)
 
 Validate the file with a YAML linter (yamllint or any online tool) before committing.
 
 > **Why this matters:**
-> While writing Github Actions workflows in YAML we will be comfortable with indentation and structure now will save a lot of debugging later. 
+> While writing Github Actions workflows in YAML we will be comfortable with indentation and structure now will save a lot of debugging later.
 
 ---
 
@@ -116,13 +116,15 @@ tfenv install 1.12.1
 tfenv use 1.12.1
 terraform version
 ```
+
 ---
 
 ## Checklist:
 
-* ✅ tfenv installed and working
-* ✅ Terraform 1.12.1 active
-* ✅ `terraform version` shows 1.12.1
+- ✅ tfenv installed and working
+- ✅ Terraform 1.12.1 active
+- ✅ `terraform version` shows 1.12.1
+
 ---
 
 # Task 3 - Create versions.tf and initialize the project
@@ -141,6 +143,7 @@ terraform {
   }
 }
 ```
+
 Run terraform init and confirm the .terraform/ folder and lock file are created.
 
 Add the following to infra/.gitignore:
@@ -152,21 +155,21 @@ Add the following to infra/.gitignore:
 *.tfvars
 .terraform.lock.hcl
 ```
-> **Note:** `.terraform.lock.hcl` is committed to the repository to maintain consistent Terraform provider versions across different environments and team members.
 
+> **Note:** `.terraform.lock.hcl` is committed to the repository to maintain consistent Terraform provider versions across different environments and team members.
 
 # Task 4 - Build the full VPC using Terraform
 
 ## Resources to create:
 
-* VPC with enable_dns_hostnames = true and enable_dns_support = true
-* 2 public subnets across two availability zones
-* 2 private subnets across two availability zones
-* 2 database subnets (separate CIDR range — keep RDS isolated)
-* Create IGW and attach to vpc to access internet from public
-* EIP and NAT for Private subnets to access internet
-* Create public route table with route to IGW and associate with public subnets
-* Create private route table with route to NGW and associate with private subnets
+- VPC with enable_dns_hostnames = true and enable_dns_support = true
+- 2 public subnets across two availability zones
+- 2 private subnets across two availability zones
+- 2 database subnets (separate CIDR range — keep RDS isolated)
+- Create IGW and attach to vpc to access internet from public
+- EIP and NAT for Private subnets to access internet
+- Create public route table with route to IGW and associate with public subnets
+- Create private route table with route to NGW and associate with private subnets
 
 ## Reference Flow:
 
@@ -175,6 +178,7 @@ Public subnets  → Public route table  → Internet Gateway  → Internet
 Private subnets → Private route table → NAT Gateway → Internet
 DB subnets      → No outbound route   → VPC-internal only
 ```
+
 ## Commands to validate and apply VPC on aws
 
 ```bash
@@ -183,6 +187,7 @@ terraform validate
 terraform plan
 terraform apply
 ```
+
 ---
 
 ## Task 5 - Create provider.tf
@@ -206,8 +211,8 @@ provider "aws" {
 
 ### Key Points
 
-* Centralized AWS provider configuration by defining the AWS region and provider settings in a dedicated file.
-* Applied default tags (`managed_by = "terraform"` and `project = "bootcamp"`) to ensure consistent resource tagging across the infrastructure.
+- Centralized AWS provider configuration by defining the AWS region and provider settings in a dedicated file.
+- Applied default tags (`managed_by = "terraform"` and `project = "bootcamp"`) to ensure consistent resource tagging across the infrastructure.
 
 ---
 
@@ -215,8 +220,8 @@ provider "aws" {
 
 Move state from local to s3
 
-* Create an S3 bucket and enable the version
-* Add the backend block in versions.tf
+- Create an S3 bucket and enable the version
+- Add the backend block in versions.tf
 
 ```hcl
 terraform {
@@ -230,10 +235,10 @@ terraform {
 }
 ```
 
-* Run terraform init -migrate-state and confirm the state file appears in S3
-* Run terraform state list and paste the output in your README as a code block
-* To verify object in s3 use `terraform state pull`
-* Image attached and can be check the output in image.png in the infra/ folder
+- Run terraform init -migrate-state and confirm the state file appears in S3
+- Run terraform state list and paste the output in your README as a code block
+- To verify object in s3 use `terraform state pull`
+- Image attached and can be check the output in image.png in the infra/ folder
 
 ```hcl
 ![alt text](image.png)
@@ -245,13 +250,13 @@ terraform {
 
 # Task 7 - Create security group for ECS, ALB, RDS
 
-Create sg.tf with 3 secuirty groups. 
+Create sg.tf with 3 secuirty groups.
 
-| Security Group | Inbound Rule | Source |
-|---------------|-------------|---------|
-| ALB SG | Port 80 and 443 | `0.0.0.0/0` (public-facing) |
-| ECS SG | Port 8000 (app port) | ALB SG only |
-| RDS SG | Port 5432 (Postgres) | ECS SG only |
+| Security Group | Inbound Rule         | Source                      |
+| -------------- | -------------------- | --------------------------- |
+| ALB SG         | Port 80 and 443      | `0.0.0.0/0` (public-facing) |
+| ECS SG         | Port 8000 (app port) | ALB SG only                 |
+| RDS SG         | Port 5432 (Postgres) | ECS SG only                 |
 
 > This reflects the real traffic flow: Internet → ALB → ECS Task → RDS. Each layer only accepts traffic from the layer above it.
 
@@ -261,10 +266,10 @@ Create sg.tf with 3 secuirty groups.
 
 Create rds.tf with:
 
-* A random password using the random provider (alpha-numeric only — no special characters to avoid connection string issues)
-* A DB subnet group using your database subnets
-* A aws_db_instance resource (Postgres, db.t3.micro, single instance, no backup retention for cost saving)
-* A aws_secretsmanager_secret and aws_secretsmanager_secret_version that stores the full DB connection string including username, password, host, port, and DB name
+- A random password using the random provider (alpha-numeric only — no special characters to avoid connection string issues)
+- A DB subnet group using your database subnets
+- A aws_db_instance resource (Postgres, db.t3.micro, single instance, no backup retention for cost saving)
+- A aws_secretsmanager_secret and aws_secretsmanager_secret_version that stores the full DB connection string including username, password, host, port, and DB name
 
 The secret string format should match what your app expects:
 
@@ -274,9 +279,29 @@ postgresql://username:password@host:5432/dbname
 
 > **Note**: Use aws_db_instance outputs to build the connection string dynamically — do not hardcode the endpoint.
 
+# Task 9 - Create ECS cluster, Task Definition and Service
 
+Create ecs.tf with:
 
+- Create a ECS cluster which is a logical unit that contains the ECS services and tasks.
+- Before creating ECS Task definition, create a log group where app logs will write inside the log group and IAM role and policies to pull the ecr image and write the app logs
+- Create cloudwatch.tf and create a resouce keeping rention days for 7 days
+- Then create iam.tf with a resource IAM role for ecs execution task role which allows and assumes a service ecs-task
+- Create iam policy that has permissions to pull ecr image and write logs in cloud watch and attach the policy to ecs task execution role
 
+> **Note**: Secure the IAM policy with permissions to pull ecr image, write logs to a specific log group and permission to read secret manager to read secrets only
 
+- Now create ecs task definition with
+  - Fargate launch type
+  - The DB connection string passed as a `secrets` reference (not plain `environment`) pointing to the Secrets Manager ARN
+  - `requires_compatibilities = ["FARGATE"]`
+  - `network_mode = "awsvpc"`
+  - log configuartion
+  - Execution role arn to be attached for ecs task def allows to pull image and write logs
+  - port mapping with host and container
+  - Image name
 
+> Passing secrets via the secrets block instead of plain environment variables means the value is never visible in the ECS console task configuration. This is the correct production approach.
+
+# Task 10 - Create ALB, Target Group and ECS Service
 
