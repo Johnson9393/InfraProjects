@@ -71,5 +71,96 @@ While registering got 500 Internal Server error
 ---
 
 
+## 1. Missing `requires_compatibilities` in ECS Task Definition
+
+### Error
+
+When creating the ECS task definition for Fargate, the task failed to register or the ECS service could not launch tasks correctly.
+
+### Cause
+
+The task definition was missing:
+
+```hcl
+requires_compatibilities = ["FARGATE"]
+```
+
+Without this setting, ECS does not know that the task is intended to run on AWS Fargate.
+
+### Fix
+
+Added the following to the task definition:
+
+```hcl
+requires_compatibilities = ["FARGATE"]
+network_mode             = "awsvpc"
+```
+
+After updating the task definition and applying Terraform, the ECS task registered successfully.
+
+---
+
+## 2. ECS Execution Role Missing Secrets Manager Permission
+
+### Error
+
+The ECS task failed to start and was unable to retrieve secrets configured in the task definition. ECS reported resource initialization errors when attempting to fetch secrets from AWS Secrets Manager.
+
+### Cause
+
+The ECS task execution role only had permissions to pull container images from ECR and write logs to CloudWatch. It did not have permission to read the database secret stored in AWS Secrets Manager.
+
+### Fix
+
+Added the following permission to the ECS execution role policy:
+
+```hcl
+{
+  Effect = "Allow"
+  Action = [
+    "secretsmanager:GetSecretValue"
+  ]
+  Resource = aws_secretsmanager_secret.sp_db_secret.arn
+}
+```
+
+After updating the IAM policy, ECS was able to retrieve the secret and start the container successfully.
+
+---
+
+## 3. ALB Target Group Using Default `instance` Target Type
+
+### Error
+
+The ECS service continuously failed health checks and targets were not registered correctly with the Application Load Balancer.
+
+### Cause
+
+The target group was created using the default target type:
+
+```hcl
+target_type = "instance"
+```
+
+AWS Fargate tasks do not run on EC2 instances. Each task receives its own Elastic Network Interface (ENI) and IP address.
+
+### Fix
+
+Changed the target group configuration to:
+
+```hcl
+target_type = "ip"
+```
+
+This allows the Application Load Balancer to register the IP addresses of Fargate tasks directly.
+
+### What `target_type = "ip"` Means
+
+The load balancer routes traffic directly to the private IP addresses of ECS Fargate tasks. This is required for Fargate because there are no EC2 instances available for the load balancer to target.
+
+After updating the target group and redeploying the service, the targets became healthy and traffic was routed successfully.
+
+---
+
 
 
