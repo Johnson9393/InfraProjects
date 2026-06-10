@@ -108,4 +108,46 @@ Keeping RDS subnets separate from private application subnets provides better ne
 
 ---
 
+## Why commit `.terraform.lock.hcl` to Git?
+
+* The `.terraform.lock.hcl` file records the exact provider versions that Terraform selected during `terraform init`.
+* When another developer clones the repository and runs `terraform init`, Terraform uses the versions recorded in the lock file to ensure everyone uses the same provider versions.
+
+### What happens when provider versions change?
+
+If the version constraint in `versions.tf` is updated, Terraform may not automatically upgrade to the newer provider version because the lock file still pins the previously selected version.
+
+For example:
+
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = ">= 6.0.0"
+  }
+}
+```
+
+If the lock file contains AWS provider version `6.2.0`, Terraform will continue using `6.2.0` until:
+
+```bash
+terraform init -upgrade
+```
+
+is executed.
+
+Running:
+
+```bash
+terraform init -upgrade
+```
+
+allows Terraform to select newer provider versions that satisfy the constraints and updates the `.terraform.lock.hcl` file accordingly.
+
+### Why commit the lock file?
+
+Committing the lock file ensures consistent provider versions across all developers and CI/CD pipelines. It prevents unexpected provider upgrades and reduces the risk of infrastructure behaving differently between environments.
+
+> **Note**: Terraform doesn't usually "not allow" the upgrade. Rather, it keeps using the version recorded in the lock file until someone intentionally runs terraform init -upgrade and commits the updated lock file.
+---
 

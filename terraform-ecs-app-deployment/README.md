@@ -158,6 +158,8 @@ Add the following to infra/.gitignore:
 
 > **Note:** `.terraform.lock.hcl` is committed to the repository to maintain consistent Terraform provider versions across different environments and team members.
 
+---
+
 # Task 4 - Build the full VPC using Terraform
 
 ## Resources to create:
@@ -279,6 +281,8 @@ postgresql://username:password@host:5432/dbname
 
 > **Note**: Use aws_db_instance outputs to build the connection string dynamically — do not hardcode the endpoint.
 
+---
+
 # Task 9 - Create ECS cluster, Task Definition and Service
 
 Create ecs.tf with:
@@ -303,5 +307,42 @@ Create ecs.tf with:
 
 > Passing secrets via the secrets block instead of plain environment variables means the value is never visible in the ECS console task configuration. This is the correct production approach.
 
+---
+
 # Task 10 - Create ALB, Target Group and ECS Service
+
+Create alb.tf with:
+
+* An ALB in public subnets with the ALB SG
+* A TG with target_type=ip (required for Fargate), health check on your app's login or health endpoint
+* An HTTP listener on port 80 forwarding to the target group
+* An ECS service in the private subnets, attached to the target group, with launch_type = "FARGATE"
+
+Verify deployment 
+
+```hcl
+# After apply, get the ALB DNS name
+terraform output alb_dns_name
+
+# Hit the endpoint
+curl http://<alb-dns-name>/
+```
+---
+
+# Task 11 - Route 53 and ACM certificate
+
+Create route53.tf with:
+
+* A data block to reference your existing hosted zone (do not re-create it)
+* A Route 53 A record aliased to the ALB for your subdomain (e.g. app.yourdomain.com)
+* An ACM certificate for the same subdomain with DNS validation
+* A for_each loop to create the DNS validation CNAME records automatically
+* An HTTPS listener (port 443) on the ALB using the validated certificate
+
+> Once deployed, confirm your app is reachable at https://app.yourdomain.com.
+
+* Create the HTTPS listener in alb.tf and forward the tarffic to TG securely by acm cert
+
+---
+
 

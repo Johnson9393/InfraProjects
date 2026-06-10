@@ -35,13 +35,13 @@ variable "ecs_task_def" {
   default = "sp-task-def"
 }
 
-variable "ecs_container_name"{
+variable "ecs_container_name" {
   type    = string
   default = "sp-container"
 }
 
 variable "sp_app_image" {
-  type   = string
+  type    = string
   default = "023192525105.dkr.ecr.us-east-1.amazonaws.com/student-portal:1.0"
 }
 

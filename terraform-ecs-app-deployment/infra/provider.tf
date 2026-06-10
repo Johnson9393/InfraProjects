@@ -3,9 +3,9 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "Test"
-      project    = "student-portal"
-      Terraform = true
-      repo = "Infra"
+      project     = "student-portal"
+      Terraform   = true
+      repo        = "Infra"
     }
   }
 }
