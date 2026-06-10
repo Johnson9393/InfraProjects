@@ -213,8 +213,8 @@ provider "aws" {
 
 ### Key Points
 
-- Centralized AWS provider configuration by defining the AWS region and provider settings in a dedicated file.
 - Applied default tags (`managed_by = "terraform"` and `project = "bootcamp"`) to ensure consistent resource tagging across the infrastructure.
+- In a real company these tags help you identify which repository owns which resource, especially when you have hundreds of resources across multiple teams.
 
 ---
 
