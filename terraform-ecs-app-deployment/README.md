@@ -242,9 +242,7 @@ terraform {
 - To verify object in s3 use `terraform state pull`
 - Image attached and can be check the output in image.png in the infra/ folder
 
-```hcl
 ![alt text](screenshots/image.png)
-```
 
 > **Note:** With versioning enabled on the bucket you can recover a deleted or corrupted state file. Always enable this.
 
