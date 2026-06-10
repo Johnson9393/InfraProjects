@@ -50,8 +50,8 @@
 
 # Succesfully Deployed an app and below are the snippets attached
 
-![alt text](terraform-ecs-app-deployment/screenshots/AlbHealthStatus.png)
-![alt text](terraform-ecs-app-deployment/screenshots/AppHealthStatus.png)
+![alt text](screenshots/AlbHealthStatus.png)
+![alt text](screenshots/AppHealthStatus.png)
 
 ----
 
@@ -61,7 +61,7 @@ While registering got 500 Internal Server error
 ## Troubleshooting Steps:
 * Check the cloud watch logs 
 * Log details
-![alt text](terraform-ecs-app-deployment/screenshots/ErrorLogs.png)
+![alt text](screenshots/ErrorLogs.png)
 
 * Error says - DB schema is not created as DB initilaization code is the main block in run.py which dont exceute with gunicorn. Hence updated the code with `db.create_all()` in _init_.py file in `app.app_context()` function block
 
