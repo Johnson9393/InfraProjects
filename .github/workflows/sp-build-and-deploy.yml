@@ -1,6 +1,6 @@
 # This workflow builds the Student Portal app and pushes the image to ECR
 
-name: SP App Build
+name: app-build-deploy
 
 on:
   push:
