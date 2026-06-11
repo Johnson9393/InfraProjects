@@ -341,6 +341,167 @@ Create route53.tf with:
 
 * Create the HTTPS listener in alb.tf and forward the tarffic to TG securely by acm cert
 
+--- 
+
+# Perform Terraform commands
+
+```
+terraform fmt
+terraform validate
+terraform plan
+terraform apply -auto-destroy
+```
+
+> Once all the resources created, open the app and verify application working as expected or not. If any issues, troubleshoot and re-run the terraform apply
+
+## Note: Updated the issues faced and rca details in troubleshooting.md file. Have a look at it
+
+# Task 12 - Github Actions
+Before creating actual build workflows practice a simple workflow 
+
+Create .github/workflows/tes-workflow.yaml:
+
+```yaml
+# Practice workflow with multi runners, multi line commands and multi jobs
+name: Test Workflow
+
+on:
+  #push:
+  workflow_dispatch:
+
+jobs:
+  run-linux-comand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run  Linux command
+        run: echo "Hello world! from Linux"
+      
+      - name: Run multi line Linux command
+        run: |
+          echo "This is a multi line command"
+          echo "Hello world! from Linux"
+
+  run-windows-command:
+    runs-on: windows-latest
+    steps:
+      - name: Run Windows command
+        run: echo "Hello world! from Windows"
+  
+  run-mac-command:
+    needs: run-windows-command
+    runs-on: macos-latest
+    steps:
+      - name: Run Mac command
+        run: echo "Hello world! from Mac"
+```
+
+> Run the flow and verify the jobs are succesfully completed 
+
+![alt text](screenshots/TestWorkflow.png)
+
 ---
+
+# Task 13 - Create a pipeline that builds the app and push the image to the ECR repo
+
+Create a workflow sp-build-and-deploy.yaml
+
+```yaml
+# This workflow builds the Student Portal app and pushes the image to ECR
+
+name: app-build-deploy
+
+on:
+  push:
+    # Only trigger the workflow when there is a change in the app directory
+    branches:
+      - main
+    paths:
+      - 'terraform-ecs-app-deployment/app/**'
+
+  # Manual trigger for the workflow
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/student-portal
+  ECR_TAG: ${{ github.sha }} # Use commit SHA to create unique image tags
+  APP_PATH: terraform-ecs-app-deployment/app
+
+jobs:
+  build-and-push-image:
+    # This job:
+    # - Runs on a GitHub-hosted runner
+    # - Builds the Docker image
+    # - Authenticates to AWS ECR
+    # - Pushes the image
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Authenticate Docker to ECR
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Build Docker image
+      - name: Build image
+        run: |
+          cd ${{ env.APP_PATH }}
+          docker build -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} .
+
+      # Push image to ECR
+      - name: Push image to ECR
+        run: |
+          docker push ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+
+```
+
+> **Note**: If ECR repo is not created, create using terraform inside infra folder before building the pipeline. 
+
+- Terraform code to create ECR Repo
+
+```hcl
+# Create ECR repository to store the application Docker Image. 
+resource "aws_ecr_repository" "sp_ecr_repo" {
+    name = "sp-ecr-repo"
+    image_tag_mutability = "IMMUTABLE"
+}
+
+
+output "ecr_repository_url" {
+    value = aws_ecr_repository.sp_ecr_repo.repository_url
+}
+```
+Apply this before building the CI/CD pipeline. Copy the repository URI — you will need it in the workflow.
+
+> Set image_tag_mutability = "IMMUTABLE" so image tags cannot be overwritten. This is a security and auditability requirement in most production environments.
+
+---
+
+- Succesfully pushed the image to ECR repo
+
+![alt text](screenshots/DockerImage.png)
+
+![alt text](screenshots/BuildPipeline.png)
+
+---
+
+
+
 
 
