@@ -1,0 +1,32 @@
+# Practice workflow with multi runners, multi line commands and multi jobs
+name: Test Workflow
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  run-linux-comand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run  Linux command
+        run: echo "Hello world! from Linux"
+      
+      - name: Run multi line Linux command
+        run: |
+          echo "This is a multi line command"
+          echo "Hello world! from Linux"
+
+  run-windows-command:
+    runs-on: windows-latest
+    steps:
+      - name: Run Windows command
+        run: echo "Hello world! from Windows"
+  
+  run-mac-command:
+    needs: run-windows-command
+    runs-on: macos-latest
+    steps:
+      - name: Run Mac command
+        run: echo "Hello world! from Mac"
+  
