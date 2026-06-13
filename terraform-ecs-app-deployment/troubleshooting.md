@@ -240,7 +240,262 @@ Also, updated the terraform code in secrets manager creation with `recovery_wind
 > Note: To verify changes are applid expected in state then run the following command `terraform state show aws_secretsmanager_secret.sp_rds_secret`
 ---
 
+# Troubleshooting Log
 
+## 1. Terraform Pipeline Succeeded but No Infrastructure Created
+
+### Root Cause
+
+The GitHub Actions workflow had a typo in the condition:
+
+```yaml
+if: inputs.plan_or_apply_or_destroy == 'apply' || inputs.plan_or_apply_or_destroy == 'destroy'
+```
+
+Input variable was actually:
+
+```yaml
+plan_or_apply_destroy
+```
+
+### Fix
+
+```yaml
+if: inputs.plan_or_apply_destroy == 'apply' || inputs.plan_or_apply_destroy == 'destroy'
+```
+
+---
+
+## 2. Secrets Manager Secret Already Scheduled for Deletion
+
+### Error
+
+```text
+InvalidRequestException:
+You can't create this secret because a secret with this name is already scheduled for deletion.
+```
+
+### Root Cause
+
+Terraform destroy scheduled the secret for deletion and AWS reserved the secret name.
+
+### Verification
+
+```bash
+aws secretsmanager describe-secret \
+  --secret-id sp-rds-secret \
+  --region us-east-1
+```
+
+Output contained:
+
+```json
+"DeletedDate": "..."
+```
+
+### Fix
+
+Force delete the secret:
+
+```bash
+aws secretsmanager delete-secret \
+  --secret-id sp-rds-secret \
+  --force-delete-without-recovery \
+  --region us-east-1
+```
+
+Verify deletion:
+
+```bash
+aws secretsmanager describe-secret \
+  --secret-id sp-rds-secret \
+  --region us-east-1
+```
+
+Expected:
+
+```text
+ResourceNotFoundException
+```
+
+### Preventive Fix
+
+```hcl
+resource "aws_secretsmanager_secret" "sp_rds_secret" {
+  name                    = "sp-rds-secret"
+  recovery_window_in_days = 0
+}
+```
+
+---
+
+## 3. ECS Task Failed to Start
+
+### Error
+
+```text
+CannotPullContainerError:
+student-portal:latest not found
+```
+
+### Root Cause
+
+Task definition referenced an image tag that did not exist in ECR.
+
+### Fix
+
+Run Build & Deploy pipeline to push image:
+
+```bash
+docker buildx build \
+  --platform linux/amd64 \
+  --push \
+  -t <ecr-repo>:${GITHUB_SHA} \
+  -t <ecr-repo>:latest .
+```
+
+Verify image exists in ECR.
+
+---
+
+## 4. GitHub Actions jq Syntax Error
+
+### Error
+
+```text
+unexpected EOF while looking for matching `'`
+```
+
+### Root Cause
+
+Invalid jq command syntax.
+
+### Fix
+
+```yaml
+- name: Update Task Definition
+  run: |
+    jq --arg IMAGE "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}" \
+      '.containerDefinitions[0].image = $IMAGE' \
+      task-definition.json > task-definition-updated.json
+```
+
+---
+
+## 5. ECS Container Crash - ModuleNotFoundError
+
+### Error
+
+```text
+ModuleNotFoundError: No module named 'app'
+```
+
+### Root Cause
+
+Application package was renamed from:
+
+```text
+app/
+```
+
+to:
+
+```text
+src/
+```
+
+but imports were not updated.
+
+### Fixes
+
+#### run.py
+
+```python
+from src import create_app, db
+```
+
+#### src/**init**.py
+
+```python
+from src.logging_config import setup_logging
+from src.metrics import http_requests_total, request_duration_seconds
+from src.routes import routes, auth
+```
+
+#### src/models/models.py
+
+```python
+from src import db, login_manager
+```
+
+#### src/routes/auth.py
+
+```python
+from src.models.models import User, db
+from src.metrics import auth_attempts
+```
+
+#### src/routes/routes.py
+
+```python
+from src.models.models import Student, Attendance, db, Class, Assignment, Announcement
+from src.metrics import (
+```
+
+### Validation
+
+Find remaining invalid imports:
+
+```bash
+grep -R "from app" .
+grep -R "import app" .
+```
+
+Expected:
+
+```text
+(no output)
+```
+
+---
+
+## 6. ECS Deployment Validation
+
+### Verify ECS Task
+
+```text
+ECS → Cluster → Service → Tasks
+```
+
+Expected:
+
+```text
+Running = 1
+Pending = 0
+Desired = 1
+```
+
+### Verify Application
+
+* Login page accessible
+* User authentication working
+* Sanity testing completed
+
+---
+
+## Final Status
+
+```text
+Terraform Apply              ✅
+Secrets Manager             ✅
+RDS                         ✅
+ECR Image Push              ✅
+ECS Deployment              ✅
+ALB Routing                 ✅
+Application Login           ✅
+Sanity Testing              ✅
+```
+---
 
 
 

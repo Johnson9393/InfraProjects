@@ -557,5 +557,16 @@ After pipeline runs succesfully:
 
 ![alt text](screenshots/RollingUpdate.png)
 
+![alt text](screenshots/DockerImage.png)
+
+![alt text](screenshots/Logs.png) 
+
+![alt text](screenshots/ALBHealth.png) 
+
+![alt text](screenshots/AppTest.png) 
+
+---
+
+
 
 
