@@ -68,4 +68,116 @@ resource "aws_ecs_service" "sp_service" {
     assign_public_ip = false
   }
 
+  depends_on = [aws_alb_listener.sp_http_listener]
+
+}
+
+#####################################################
+# ECS Service Auto Scaling Target
+#
+# Enables ECS Service Auto Scaling.
+# ECS can increase/decrease the number of running tasks.
+#
+# Min Tasks = 1
+# Max Tasks = 4
+#
+# Example:
+# CPU Low  -> 1 Task
+# CPU High -> 2,3,4 Tasks
+#####################################################
+
+resource "aws_appautoscaling_target" "sp_target" {
+  min_capacity = 1
+  max_capacity = 4
+
+  # ECS Service to be scaled
+  resource_id = "service/${aws_ecs_cluster.sp_cluster.name}/${aws_ecs_service.sp_service.name}" # Identifies which ecs service to be scaled. Meaning service/sp-cluster/sp-service. Scale THIS servic inside THIS cluster
+
+  scalable_dimension = "ecs:service:DesiredCount" # what property should be changed when auto scaling
+  service_namespace  = "ecs" # which service to be scaled. Here its ecs service. 
+}
+
+#####################################################
+# CPU Target Tracking Scaling Policy
+#
+# AWS automatically maintains CPU around 60%.
+#
+# Example:
+# CPU > 60%  -> Add Tasks
+# CPU < 60%  -> Remove Tasks
+#
+# Scale Out:
+# Wait only 60 sec before adding tasks.
+#
+# Scale In:
+# Wait 300 sec before removing tasks.
+# (Prevents aggressive scale down)
+#####################################################
+
+resource "aws_appautoscaling_policy" "sp_cpu_policy" {
+  name               = "cpu-tracking"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.sp_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.sp_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.sp_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    # Maintain CPU around 60%
+    target_value = 60.0
+
+    # Wait 60 sec before scaling out
+    scale_out_cooldown = 60
+
+    # Wait 300 sec before scaling in
+    scale_in_cooldown = 300
+  }
+}
+
+
+#####################################################
+# Memory Step Scaling Policy
+#
+# Step Scaling performs fixed scaling actions.
+#
+# Example:
+# Memory crosses threshold
+# -> Add 1 Task
+#
+# Unlike Target Tracking,
+# Step Scaling requires CloudWatch Alarms.
+#
+# NOTE:
+# This policy alone will NOT work.
+# You must create CloudWatch alarms
+# and attach them to this policy.
+#####################################################
+# We will learn more of step scaling during python projects 
+
+resource "aws_appautoscaling_policy" "sp_memory_policy" {
+  name               = "memory-tracking"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.sp_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.sp_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.sp_target.service_namespace
+
+  step_scaling_policy_configuration {
+
+    step_adjustment {
+      # Add 1 task when alarm creates with memory util at 80% 
+      # metric intervals are how far the metric is beyond 80%. Means if its 80 to 90% add 1 task
+      # Realistic example is add 2 more scaling_adjustments with lower to 10 and upper to 20. another adjustemnt with lower bound 20. 
+      # 80% - 90%  -> Add 1 Task
+      # 90% - 100% -> Add 2 Tasks
+      # >100%      -> Add 3 Tasks
+      scaling_adjustment = 1
+
+      metric_interval_lower_bound = 0
+      metric_interval_upper_bound = 10
+    }
+  }
 }

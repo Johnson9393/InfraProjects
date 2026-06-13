@@ -288,4 +288,677 @@ ECS will pull that exact image from ECR and deploy it.
 
 ---
 
+# ECS Auto Scaling - Quick Reference
 
+## 1. Target Tracking Scaling (Most Common)
+
+### What it does
+
+AWS automatically maintains a target metric value.
+
+### Example
+
+```text
+Target CPU = 60%
+
+CPU = 80%
+↓
+Add Tasks
+
+CPU = 20%
+↓
+Remove Tasks
+```
+
+### Terraform
+
+```hcl
+policy_type = "TargetTrackingScaling"
+```
+
+### Common Metrics
+
+```text
+ECSServiceAverageCPUUtilization
+ECSServiceAverageMemoryUtilization
+ALBRequestCountPerTarget
+```
+
+### Real-world Use Cases
+
+✅ Web Applications
+
+```text
+Student Portal
+E-Commerce Website
+Internal Company Portal
+```
+
+✅ Microservices
+
+```text
+User Service
+Payment Service
+Catalog Service
+```
+
+### When to Use
+
+```text
+80% of ECS workloads
+Simple and AWS-managed
+```
+
+---
+
+## 2. Step Scaling
+
+### What it does
+
+Scales by a fixed amount when CloudWatch Alarms trigger.
+
+### Example
+
+```text
+Memory > 80%
+↓
+Add 1 Task
+
+Memory > 90%
+↓
+Add 2 Tasks
+```
+
+### Terraform
+
+```hcl
+policy_type = "StepScaling"
+```
+
+### Requires
+
+```text
+CloudWatch Alarm
++
+Scaling Policy
+```
+
+### Real-world Use Cases
+
+✅ Traffic spikes
+
+```text
+Flash Sale
+Black Friday
+Product Launch
+```
+
+### When to Use
+
+```text
+Need precise control
+Need different actions for different thresholds
+```
+
+---
+
+## 3. Simple Scaling (Legacy)
+
+### What it does
+
+CloudWatch Alarm triggers a fixed scaling action.
+
+### Example
+
+```text
+CPU > 80%
+↓
+Add 1 Task
+```
+
+### Real-world Use Cases
+
+```text
+Rarely used today
+Mostly replaced by Step Scaling
+```
+
+### When to Use
+
+```text
+Avoid for new projects
+```
+
+---
+
+## 4. Scheduled Scaling
+
+### What it does
+
+Scales at specific times.
+
+### Example
+
+```text
+9 AM
+↓
+Scale to 4 Tasks
+
+10 PM
+↓
+Scale to 1 Task
+```
+
+### Real-world Use Cases
+
+✅ Office Applications
+
+```text
+HR Portal
+Payroll System
+Internal Dashboards
+```
+
+✅ Educational Platforms
+
+```text
+Morning Traffic Predictable
+```
+
+### When to Use
+
+```text
+Traffic pattern is predictable
+```
+
+---
+
+## 5. Predictive Scaling
+
+### What it does
+
+AWS predicts future traffic using historical patterns.
+
+### Example
+
+```text
+Every day 9 AM traffic increases
+↓
+AWS scales before traffic arrives
+```
+
+### Real-world Use Cases
+
+✅ Enterprise Workloads
+
+```text
+Large E-commerce
+Banking Systems
+Streaming Platforms
+```
+
+### When to Use
+
+```text
+Predictable daily traffic
+Large-scale environments
+```
+
+---
+
+# Common Scaling Metrics
+
+## CPU Utilization
+
+```text
+Metric:
+ECSServiceAverageCPUUtilization
+```
+
+### Example
+
+```text
+CPU > 60%
+↓
+Scale Out
+
+CPU < 60%
+↓
+Scale In
+```
+
+### Best For
+
+```text
+API Servers
+Backend Services
+Microservices
+```
+
+---
+
+## Memory Utilization
+
+```text
+Metric:
+ECSServiceAverageMemoryUtilization
+```
+
+### Example
+
+```text
+Memory > 70%
+↓
+Scale Out
+```
+
+### Best For
+
+```text
+Java Apps
+Spring Boot Apps
+Large Caches
+```
+
+---
+
+## ALB Request Count
+
+```text
+Metric:
+ALBRequestCountPerTarget
+```
+
+### Example
+
+```text
+1000 Requests/Target
+↓
+Add Tasks
+```
+
+### Best For
+
+```text
+Public Websites
+High Traffic APIs
+```
+
+---
+
+# Load Balancer, CDN, Auto Scaling & DDoS - Quick Reference
+
+## Load Balancer (ALB)
+
+### What it does
+
+Distributes traffic across multiple application instances/tasks.
+
+```text
+Users
+  ↓
+ALB
+  ↓
+Task-1
+Task-2
+Task-3
+```
+
+### Benefits
+
+* High Availability
+* Fault Tolerance
+* No single point of failure
+* Health Checks
+
+### Real-world Use Cases
+
+```text
+E-Commerce Website
+Banking Application
+Student Portal
+Netflix
+Amazon
+```
+
+---
+
+# Auto Scaling
+
+### What it does
+
+Automatically adds/removes ECS tasks based on load.
+
+```text
+100 Users
+↓
+1 Task
+
+1000 Users
+↓
+4 Tasks
+```
+
+### Benefits
+
+* Better Performance
+* Cost Optimization
+* Handles Traffic Spikes
+
+### Real-world Use Cases
+
+```text
+Black Friday Sale
+Exam Results Day
+Product Launch
+```
+
+---
+
+# How ALB and Auto Scaling Work Together
+
+```text
+Users
+  ↓
+ALB
+  ↓
+Task-1
+Task-2
+```
+
+Traffic increases:
+
+```text
+CPU > 60%
+↓
+Auto Scaling
+↓
+Task-3
+Task-4
+```
+
+ALB automatically sends traffic to new tasks.
+
+### Benefits
+
+```text
+No downtime
+Automatic scaling
+Automatic traffic distribution
+```
+
+---
+
+# CDN (CloudFront)
+
+### What it does
+
+Caches content closer to users worldwide.
+
+Without CDN:
+
+```text
+India User
+↓
+US Server
+```
+
+With CDN:
+
+```text
+India User
+↓
+CloudFront Edge Location
+```
+
+### Benefits
+
+* Faster Website
+* Lower Latency
+* Reduced Server Load
+* Global Reach
+
+### Real-world Use Cases
+
+```text
+Netflix
+YouTube
+Instagram
+Amazon
+```
+
+---
+
+# How CDN + ALB + Auto Scaling Work Together
+
+```text
+User
+  ↓
+CloudFront
+  ↓
+ALB
+  ↓
+ECS Tasks
+```
+
+### Flow
+
+```text
+Static Content
+↓
+Served by CloudFront Cache
+
+Dynamic Requests
+↓
+Forwarded to ALB
+
+Traffic Increase
+↓
+Auto Scaling Adds Tasks
+```
+
+### Production Architecture
+
+```text
+Users
+   ↓
+CloudFront
+   ↓
+ALB
+   ↓
+ECS Service
+   ↓
+RDS
+```
+
+---
+
+# DDoS Attack
+
+### What it is
+
+Attackers send huge amounts of fake traffic.
+
+```text
+Millions of Requests
+↓
+Website Crash
+```
+
+### Common Types
+
+```text
+HTTP Flood
+SYN Flood
+UDP Flood
+Bot Traffic
+```
+
+---
+
+# AWS DDoS Protection
+
+## AWS Shield Standard (Free)
+
+Enabled automatically.
+
+Protects against:
+
+```text
+Network Layer Attacks
+Transport Layer Attacks
+```
+
+### Good For
+
+```text
+Personal Projects
+Small Applications
+```
+
+---
+
+## AWS Shield Advanced (Paid)
+
+Additional protection.
+
+Features:
+
+```text
+Advanced Detection
+DDoS Response Team
+Cost Protection
+```
+
+### Good For
+
+```text
+Banking Apps
+E-Commerce
+Enterprise Systems
+```
+
+---
+
+# AWS WAF (Web Application Firewall)
+
+Filters malicious requests.
+
+Examples:
+
+```text
+Block SQL Injection
+Block XSS
+Block Bad Bots
+Rate Limiting
+Geo Blocking
+```
+
+### Example
+
+```text
+IP sends 5000 requests/min
+↓
+WAF Blocks IP
+```
+
+---
+
+# Production Security Architecture
+
+```text
+Users
+   ↓
+CloudFront
+   ↓
+AWS Shield
+   ↓
+AWS WAF
+   ↓
+ALB
+   ↓
+ECS Tasks
+   ↓
+RDS
+```
+
+---
+
+# What to Use for Student Portal
+
+### Learning Environment
+
+```text
+ALB
++
+ECS Auto Scaling
++
+CloudFront
++
+AWS Shield Standard
+```
+
+### Production Environment
+
+```text
+CloudFront
++
+AWS Shield
++
+AWS WAF
++
+ALB
++
+ECS Auto Scaling
++
+RDS
+```
+
+---
+
+# Interview Summary
+
+## Load Balancer
+
+```text
+Distributes traffic across multiple servers/tasks.
+```
+
+## Auto Scaling
+
+```text
+Automatically increases/decreases capacity based on load.
+```
+
+## CDN
+
+```text
+Caches content closer to users for faster delivery.
+```
+
+## AWS Shield
+
+```text
+Protects against DDoS attacks.
+```
+
+## AWS WAF
+
+```text
+Protects against malicious web requests.
+```
+
+## Typical Production Flow
+
+```text
+CloudFront
+↓
+WAF
+↓
+ALB
+↓
+Auto Scaling ECS Tasks
+↓
+RDS
+```
+---
