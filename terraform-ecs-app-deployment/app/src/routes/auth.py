@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session
-from app.models.models import User, db
+from src.models.models import User, db
 import re
 from flask_login import login_user, logout_user, current_user
-from app.metrics import auth_attempts
+from src.metrics import auth_attempts
 
 auth_bp = Blueprint("auth", __name__)
 

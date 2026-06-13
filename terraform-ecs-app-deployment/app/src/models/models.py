@@ -1,4 +1,4 @@
-from app import db, login_manager
+from src import db, login_manager
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from bcrypt import hashpw, checkpw, gensalt

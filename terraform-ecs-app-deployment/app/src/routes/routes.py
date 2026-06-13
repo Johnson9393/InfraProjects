@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models.models import Student, Attendance, db, Class, Assignment, Announcement
+from src.models.models import Student, Attendance, db, Class, Assignment, Announcement
 from datetime import datetime, date
-from app.metrics import (
+from src.metrics import (
     student_operations, student_total, class_operations, class_total,
     assignment_operations, assignment_total, announcement_operations,
     announcement_total, db_query_duration_seconds, student_attendance_marked
