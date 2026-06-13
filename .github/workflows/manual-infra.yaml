@@ -20,7 +20,7 @@ on:
           - 1.15.0
           - 1.16.0
 
-      plan_or_apply_destroy:
+      plan_or_apply_or_destroy:
         type: choice
         required: true
         options:
@@ -55,7 +55,7 @@ jobs:
         run: terraform init
       
       - name: Plan Terraform
-        if: inputs.plan_or_apply_destroy == 'plan'
+        if: inputs.plan_or_apply_or_destroy == 'plan'
         working-directory: ${{ inputs.terraform_path }}
         run: terraform plan
       
