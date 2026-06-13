@@ -555,7 +555,7 @@ After pipeline runs succesfully:
 2. Take a screenhsot of old task draining and new task running
 3. Check the ALB target group — confirm new tasks register as healthy before old ones are removed
 
-
+![alt text](screenshots/RollingUpdate.png)
 
 
 

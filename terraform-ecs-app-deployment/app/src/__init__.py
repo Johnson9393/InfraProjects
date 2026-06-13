@@ -6,8 +6,8 @@ from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 import time
-from app.logging_config import setup_logging
-from app.metrics import http_requests_total, request_duration_seconds
+from src.logging_config import setup_logging
+from src.metrics import http_requests_total, request_duration_seconds
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -56,7 +56,7 @@ def create_app():
         return response
 
     with app.app_context():
-        from app.routes import routes, auth
+        from src.routes import routes, auth
 
         app.register_blueprint(routes.bp)
         app.register_blueprint(auth.auth_bp)
