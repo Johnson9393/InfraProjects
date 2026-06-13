@@ -41,6 +41,7 @@ resource "aws_db_instance" "sp_rds_instance" {
 resource "aws_secretsmanager_secret" "sp_rds_secret" {
   name        = "sp-rds-secret"
   description = "Secret for RDS credentials"
+  recovery_window_in_days = 0
   tags = {
     Name = "sp-rds-secret"
   }

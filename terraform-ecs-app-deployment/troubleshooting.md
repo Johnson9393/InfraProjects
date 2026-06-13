@@ -162,5 +162,85 @@ After updating the target group and redeploying the service, the targets became 
 
 ---
 
+# Failures when apply terraform from cicd pipeline
+
+```hcl
+╷
+│ Error: creating Secrets Manager Secret (sp-rds-secret): operation error Secrets Manager: CreateSecret, https response error StatusCode: 400, RequestID: fa44995d-2dbf-44d0-945b-cff28cb5c872, InvalidRequestException: You can't create this secret because a secret with this name is already scheduled for deletion.
+│ 
+│   with aws_secretsmanager_secret.sp_rds_secret,
+│   on rds.tf line 41, in resource "aws_secretsmanager_secret" "sp_rds_secret":
+│   41: resource "aws_secretsmanager_secret" "sp_rds_secret" {
+│ 
+╵
+Error: Terraform exited with code 1.
+Error: Process completed with exit code 1.
+```
+# RCA: Terraform Apply Failed for AWS Secrets Manager Secret
+
+## Root Cause
+
+During Terraform deployment, creation of the AWS Secrets Manager secret `sp-rds-secret` failed with the following error:
+
+```text
+InvalidRequestException: You can't create this secret because a secret with this name is already scheduled for deletion.
+```
+
+Investigation was performed using:
+
+```bash
+aws secretsmanager describe-secret \
+  --secret-id sp-rds-secret \
+  --region us-east-1
+```
+
+The output confirmed that the secret already existed and was in a **Pending Deletion** state, as indicated by the presence of the `DeletedDate` attribute:
+
+```json
+{
+  "Name": "sp-rds-secret",
+  "DeletedDate": "2026-06-10T20:52:46.186000+05:30"
+}
+```
+
+AWS reserves the secret name until the scheduled deletion is completed, preventing Terraform from creating a new secret with the same name.
+
+## Resolution
+
+1. Verified the secret status using `describe-secret` and confirmed the presence of `DeletedDate`.
+2. Restored the secret from the Pending Deletion state:
+
+```bash
+aws secretsmanager restore-secret \
+  --secret-id sp-rds-secret \
+  --region us-east-1
+```
+
+3. Re-ran the Terraform deployment:
+
+```bash
+terraform apply
+```
+
+It failed again cause since we restored the secrets terraform state is not updated and it still holds the existing secrets which is in `pending for deletion`. 
+
+## Quick Fix:
+
+Forcefully deleted the secrets using below command
+
+```hcl
+aws secretsmanager delete-secret \
+  --secret-id sp-rds-secret \
+  --force-delete-without-recovery \
+  --region us-east-1
+```
+
+Also, updated the terraform code in secrets manager creation with `recovery_window_in_days = 0` Hence forth, terraform will force immediate deletion instead of scheduling deletion upon terraform destroy
+
+> Note: To verify changes are applid expected in state then run the following command `terraform state show aws_secretsmanager_secret.sp_rds_secret`
+---
+
+
+
 
 
