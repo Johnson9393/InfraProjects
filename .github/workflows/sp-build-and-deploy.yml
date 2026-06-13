@@ -107,7 +107,7 @@ jobs:
     # Update Task Definition with the commit sha image that we have pushed to ECR
       - name: Update Task Definition
         run: |
-          jq .containerDefinitions[0].image = "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}"' \
+          jq .containerDefinitions[0].image = "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}" \
             task-definition.json > task-definition-updated.json
       
     # Deploy to ECS 
