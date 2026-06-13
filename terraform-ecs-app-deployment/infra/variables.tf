@@ -35,6 +35,11 @@ variable "ecs_task_def" {
   default = "sp-task-def"
 }
 
+variable "ecs_service" {
+  type = string
+  default = "sp-service"
+}
+
 variable "ecs_container_name" {
   type    = string
   default = "sp-container"
@@ -42,7 +47,7 @@ variable "ecs_container_name" {
 
 variable "sp_app_image" {
   type    = string
-  default = "023192525105.dkr.ecr.us-east-1.amazonaws.com/student-portal:1.0"
+  default = "023192525105.dkr.ecr.us-east-1.amazonaws.com/student-portal:latest"
 }
 
 variable "sp_app_port" {

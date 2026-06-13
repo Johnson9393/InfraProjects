@@ -18,6 +18,9 @@ env:
   ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/student-portal
   ECR_TAG: ${{ github.sha }} # Use commit SHA to create unique image tags
   APP_PATH: terraform-ecs-app-deployment/app
+  ECS_TASK_DEF: sp-task-def
+  ECS_SERVICE: sp-service
+  ECS_CLUSTER: sp-cluster
 
 jobs:
   build-and-push-image:
@@ -51,12 +54,68 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       # Build Docker image
-      - name: Build image
+      # We can build and push image with multple tags in many ways as below
+      # docker build -t sp .
+      # docker tag sp:latest ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+      # docker tag sp:latest ${{ env.ECR_REPO }}:latest
+      # docker push ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+      # docker push ${{ env.ECR_REPO }}:latest
+
+      # Note: Above commands are the detailed way by pushing multiple images to ecr
+
+      # Below is the way to build and push using a single command
+
+      # docker build --platform linux/amd64 -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} -t ${{ env.ECR_REPO }}:latest .
+      # docker push ${{ env.ECR_REPO }} --all-tags
+
+      # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} .
+      # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:latest .
+  
+      - name: Build and push image to ECR
         run: |
           cd ${{ env.APP_PATH }}
-          docker build -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} .
+          docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} -t ${{ env.ECR_REPO }}:latest .
+      
+      # # Push image to ECR
+      # - name: Push image to ECR
+      #   run: |
+      #     docker push ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
 
-      # Push image to ECR
-      - name: Push image to ECR
+  deploy-ecs-service:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+    
+    # Downlaod the Task definition
+      - name: Download Task Definition
         run: |
-          docker push ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEF }} \
+            --region ${{ env.AWS_REGION }} \
+            --query taskDefinition \
+            > task-definition.json
+    
+    # Update Task Definition with the commit sha image that we have pushed to ECR
+      - name: Update Task Definition
+        run: |
+          jq .containerDefinitions[0].image = "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}"' \
+            task-definition.json > task-definition-updated.json
+      
+    # Deploy to ECS 
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-updated.json
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+

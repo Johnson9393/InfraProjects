@@ -1,0 +1,66 @@
+name: Manual Infra
+
+on:
+  workflow_dispatch:
+    inputs:
+      terraform_path:
+        type: choice
+        required: true
+        options:
+          - terraform-ecs-app-deployment/infra
+          - terraform/modules
+      
+      terraform_version:
+        type: choice
+        required: true
+        options:
+          - 1.12.1
+          - 1.13.0
+          - 1.14.0
+          - 1.15.0
+          - 1.16.0
+
+      plan_or_apply_destroy:
+        type: choice
+        required: true
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+      
+      - name: Initialize Terraform
+        working-directory: ${{ inputs.terraform_path }}
+        run: terraform init
+      
+      - name: Plan Terraform
+        if: inputs.plan_or_apply_destroy == 'plan'
+        working-directory: ${{ inputs.terraform_path }}
+        run: terraform plan
+      
+      - name: Apply or Destroy Terraform
+        if: inputs.plan_or_apply_or_destroy == 'apply' || inputs.plan_or_apply_or_destroy == 'destroy'
+        working-directory: ${{ inputs.terraform_path }}
+        run: terraform ${{ inputs.plan_or_apply_or_destroy }} -auto-approve
+

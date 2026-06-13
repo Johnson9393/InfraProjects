@@ -1,0 +1,40 @@
+# SP Infra creation 
+name: Terraform app infra
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.12.1
+  infra_path: terraform-ecs-app-deployment/infra
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Initilalize Terraform
+        run: |
+          cd ${{ env.infra_path }}
+          terraform init
+      
+      - name: Apply Terraform
+        working-directory: ${{ env.infra_path }}
+        run: |
+          terraform apply -auto-approve
+      

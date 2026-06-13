@@ -149,5 +149,143 @@ allows Terraform to select newer provider versions that satisfy the constraints 
 Committing the lock file ensures consistent provider versions across all developers and CI/CD pipelines. It prevents unexpected provider upgrades and reduces the risk of infrastructure behaving differently between environments.
 
 > **Note**: Terraform doesn't usually "not allow" the upgrade. Rather, it keeps using the version recorded in the lock file until someone intentionally runs terraform init -upgrade and commits the updated lock file.
+
 ---
+
+## Why Do We Push Two Tags to ECR?
+
+During the GitHub Actions build process, the Docker image is pushed to ECR using two tags:
+
+```text
+student-portal:latest
+student-portal:<commit-sha>
+```
+
+Example:
+
+```text
+student-portal:latest
+student-portal:a1b2c3d
+```
+
+### Why Use a Commit SHA Tag?
+
+The commit SHA uniquely identifies the exact version of the application code that was built.
+
+Benefits:
+
+* Every image is unique.
+* Easy to identify which Git commit is deployed.
+* Makes rollbacks simple if a deployment fails.
+* Provides complete deployment traceability.
+
+Example:
+
+```text
+student-portal:a1b2c3d
+student-portal:b4c5d6e
+student-portal:c7d8e9f
+```
+
+Each image represents a specific version of the application.
+
+### Why Use the `latest` Tag?
+
+The `latest` tag always points to the most recently built image.
+
+Benefits:
+
+* Easy for developers to pull and test the newest image.
+* Convenient for development and debugging.
+* No need to remember specific commit SHA values.
+
+Example:
+
+```text
+student-portal:latest
+```
+
+### How This Helps During ECS Deployment
+
+When GitHub Actions updates the ECS task definition, it should reference the image using the commit SHA tag:
+
+```text
+123456789012.dkr.ecr.us-east-1.amazonaws.com/student-portal:a1b2c3d
+```
+
+This ensures ECS deploys the exact image built during that workflow run.
+
+Using commit SHA tags prevents situations where multiple deployments reference the same `latest` tag and accidentally pull the wrong image.
+
+### Summary
+
+* `latest` → Convenient for development and testing.
+* `<commit-sha>` → Safe, traceable, and recommended for deployments.
+* ECS deployments should use the commit SHA image to guarantee the correct application version is deployed.
+* Keeping both tags provides convenience for developers and reliability for production deployments.
+
+---
+
+## Why Use Commit SHA Tags Instead of Only `latest`?
+
+Every time code is pushed to the `main` branch, GitHub Actions builds a new Docker image and pushes it to ECR.
+
+Example:
+
+```text
+Commit A → student-portal:a1b2c3d
+Commit B → student-portal:b4c5d6e
+Commit C → student-portal:c7d8e9f
+```
+
+ECR now contains:
+
+```text
+student-portal:a1b2c3d
+student-portal:b4c5d6e
+student-portal:c7d8e9f
+student-portal:latest
+```
+
+The `latest` tag always points to the most recent image, while each commit SHA tag points to a specific version of the application.
+
+### Real-World Scenario
+
+Suppose three developers push code to the `main` branch:
+
+```text
+Developer 1 → a1b2c3d
+Developer 2 → b4c5d6e
+Developer 3 → c7d8e9f
+```
+
+The ECS service automatically deploys:
+
+```text
+student-portal:c7d8e9f
+```
+
+Later, a bug is discovered in commit `c7d8e9f`.
+
+Instead of rebuilding the application, we can simply update the ECS task definition to use a previously known good image:
+
+```text
+student-portal:b4c5d6e
+```
+
+ECS will pull that exact image from ECR and deploy it.
+
+### Why This Is Useful
+
+* Every image version is preserved in ECR.
+* We can deploy any previous commit without rebuilding the application.
+* Rollbacks are fast and reliable.
+* We always know exactly which code version is running in production.
+
+### Summary
+* ECS task definitions should reference the commit SHA image tag.
+* If a deployment fails, we can quickly roll back by updating the task definition to a previously successful image tag.
+
+---
+
 

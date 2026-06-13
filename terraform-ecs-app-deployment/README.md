@@ -501,6 +501,60 @@ Apply this before building the CI/CD pipeline. Copy the repository URI — you w
 
 ---
 
+# Task 14 - Deploy the Image to ECS using github actions
+
+Update the sp-build-and-deploy.yaml with:
+
+```yaml
+deploy-ecs-service:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+    
+    # Downlaod the Task definition
+      - name: Download Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEF }} \
+            --region ${{ env.AWS_REGION }} \
+            --query taskDefinition \
+            > task-definition.json
+    
+    # Update Task Definition with the commit sha image that we have pushed to ECR
+      - name: Update Task Definition
+        run: |
+          jq .containerDefinitions[0].image = "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}"' \
+            task-definition.json > task-definition-updated.json
+      
+    # Deploy to ECS 
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-updated.json
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+```
+
+> Post images are pushed to ECR, then updating the task definition with the required image tag using json 
+
+# Task 15 - Observe the rolling deployment
+
+After pipeline runs succesfully:
+
+1. Go to  ECS cluster → service → deployments tab
+2. Take a screenhsot of old task draining and new task running
+3. Check the ALB target group — confirm new tasks register as healthy before old ones are removed
+
 
 
 

@@ -50,7 +50,7 @@ resource "aws_ecs_task_definition" "sp_task_definition" {
 
 # ECS Service is a long-running task that you can run and maintain on an ECS cluster. It allows you to run and maintain a specified number of instances of a task definition simultaneously in an ECS cluster. If any of the tasks fail or stop, the service scheduler will automatically replace them to maintain the desired count.
 resource "aws_ecs_service" "sp_service" {
-  name            = "sp-service"
+  name            = var.ecs_service
   cluster         = aws_ecs_cluster.sp_cluster.id
   task_definition = aws_ecs_task_definition.sp_task_definition.arn
   desired_count   = 2
