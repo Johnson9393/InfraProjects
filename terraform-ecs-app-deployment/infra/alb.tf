@@ -47,6 +47,26 @@ resource "aws_alb_listener" "sp_http_listener" {
   }
 }
 
+#  # HTTP Listener (Port 80)
+# # Redirect all HTTP requests to HTTPS
+
+# resource "aws_alb_listener" "sp_http_listener" {
+#   load_balancer_arn = aws_alb.sp_alb.arn
+#   port              = 80
+#   protocol          = "HTTP"
+
+#   default_action {
+#     type = "redirect"
+
+#     redirect {
+#       protocol    = "HTTPS"
+#       port        = "443"
+#       status_code = "HTTP_301"
+#     }
+#   }
+# }
+
+
 # Create listener for port 443
 resource "aws_alb_listener" "sp_https_listener" {
   load_balancer_arn = aws_alb.sp_alb.arn
