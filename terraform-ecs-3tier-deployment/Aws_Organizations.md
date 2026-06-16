@@ -457,7 +457,7 @@ The DEV_READONLY and PROD_READONLY roles can:
 Logged in using the AWS root account:
 
 ```text
-johnson.johnny0903@gmail.com
+johnson.johnnyxxx@gmail.com
 ```
 
 This account later became the AWS Organization Management Account.
@@ -663,7 +663,7 @@ DEV
 Provide email:
 
 ```text
-johnson.johnny0903+dev@gmail.com
+johnson.johnnyxxx+dev@gmail.com
 ```
 
 Click:
@@ -826,7 +826,7 @@ PROD
 Provide email:
 
 ```text
-johnson.johnny0903+prod@gmail.com
+johnson.johnnyxxx+prod@gmail.com
 ```
 
 Click:
