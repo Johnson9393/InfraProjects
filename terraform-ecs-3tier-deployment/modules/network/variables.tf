@@ -4,15 +4,17 @@ variable "vpc_cidr" {
   description = "cidr for vpc "
 }
 
+# Allows instances and resources in the VPC to receive DNS hostnames, making it easier for services to communicate using names instead of IP addresses.
 variable "enable_dns_hostnames" {
   type        = bool
   description = "Enable DNS hostnames in the VPC"
-  default     = false
+  default     = true
 }
 
+# Enables the AWS-provided DNS server inside the VPC, allowing resources to resolve domain names (such as AWS service endpoints, RDS endpoints, and internal hostnames) into IP addresses.
 variable "enable_dns_support" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "aws_region" {
@@ -52,16 +54,23 @@ variable "public_subnets" {
   description = "List of public subnets"
 }
 
+variable "rds_subnets" {
+  type = list({
+    cidr = string
+    availability_zone = string
+    prefix = string
+  })
+  description = "list of rds subnets"
+}
+
 variable "need_ngw" {
   type        = bool
   description = "If ngw is required"
-  default     = false
 }
 
 variable "need_single_ngw" {
   type        = bool
   description = "need only 1 ngw"
-  default     = false
 }
 
 variable "default_tags" {

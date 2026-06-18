@@ -69,6 +69,10 @@ resource "aws_subnet" "private_subnets" {
 # It creates eip based on the need dynamically
 resource "aws_eip" "eip_nat" {
   count = var.need_ngw ? var.need_single_ngw ? 1 : length(var.public_subnets) : 0
+
+  tags = {
+    Name = "${var.vpc_name}-eip-${count.index + 1}"
+  }
 }
 
 # NGW
@@ -108,4 +112,18 @@ resource "aws_route_table_association" "private_rt_association" {
 
   subnet_id      = aws_subnet.private_subnets[count.index].id
   route_table_id = var.need_single_ngw ? aws_route_table.private_rt[0].id : aws_route_table.private_rt[count.index].id
+}
+
+
+# RDS Subnets
+resource "aws_subnet" "rds_subnets" {
+  count = length(var.rds_subnets)
+
+  vpc_id = aws_vpc.main.id
+  cidr_block = var.rds_subnets[count.index].cidr
+  availability_zone = var.rds_subnets[count.index].availability_zone
+
+  tags = {
+    Name = "${var.vpc_name}-${var.rds_subnets[count.index].prefix}-${count.index + 1}"
+  }
 }
