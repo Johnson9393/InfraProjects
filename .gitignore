@@ -206,3 +206,29 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .DS_Store
+
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Terraform variable files
+# *.tfvars
+# *.tfvars.json
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform lock file (optional)
+# .terraform.lock.hcl
+
+# Mac
+.DS_Store
+
+# Python
+.venv/

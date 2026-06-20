@@ -18,7 +18,7 @@ variable "enable_dns_support" {
 }
 
 variable "aws_region" {
-  type = string
+  type        = string
   description = "AWS region to deploy the resources"
 }
 
@@ -55,9 +55,9 @@ variable "public_subnets" {
 
 variable "rds_subnets" {
   type = list(object({
-    cidr = string
+    cidr              = string
     availability_zone = string
-    prefix = string
+    prefix            = string
   }))
   description = "list of rds subnets"
 }
