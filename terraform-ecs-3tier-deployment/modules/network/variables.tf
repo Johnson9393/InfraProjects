@@ -19,7 +19,6 @@ variable "enable_dns_support" {
 
 variable "aws_region" {
   type = string
-  #   default = "us-east-1"
   description = "AWS region to deploy the resources"
 }
 
@@ -55,11 +54,11 @@ variable "public_subnets" {
 }
 
 variable "rds_subnets" {
-  type = list({
+  type = list(object({
     cidr = string
     availability_zone = string
     prefix = string
-  })
+  }))
   description = "list of rds subnets"
 }
 

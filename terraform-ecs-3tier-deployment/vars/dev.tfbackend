@@ -1,2 +1,4 @@
 bucket = "dojo-app-bucket"
-key = ""
+key = "sp-state-bucket/infra/dev/terraform.tfstate"
+region = "us-east-1"
+
