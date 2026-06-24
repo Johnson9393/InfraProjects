@@ -898,10 +898,113 @@ Always review Terraform plans carefully before applying naming convention change
 
 Resource names often become part of the infrastructure identity.
 
+---
 
+# Understanding Secrets Manager Design
+
+Initially, I stored a complete database connection string directly inside Secrets Manager.
+
+Example:
+
+```text
+postgresql://user:password@host:port/database
+```
+
+Later I understood that a production-grade approach is storing secrets as structured JSON.
+
+Example:
+
+```json
+{
+  "username": "postgres",
+  "password": "password",
+  "host": "endpoint",
+  "port": 5432,
+  "database": "mydb"
+}
+```
+
+Benefits:
+
+* Easier secret rotation
+* Easier secret management
+* Easier application integration
+* More flexible architecture
+
+---
+
+# Understanding RDS and Aurora Differences
+
+I learned that RDS and Aurora solve different problems.
+
+### RDS PostgreSQL
+
+Used for:
+
+* Development environments
+* Lower cost
+* Simpler workloads
+
+### Aurora PostgreSQL
+
+Used for:
+
+* Production environments
+* High availability
+* Read scaling
+* Automatic failover
+
+Aurora provides:
+
+* Writer node
+* Multiple reader nodes
+* Shared storage architecture
+
+This makes Aurora more suitable for production workloads.
+
+---
+
+# Understanding Database Configuration Consistency
+
+A valuable lesson learned was ensuring database naming consistency.
+
+The database name used by:
+
+* Backend Service
+* RDS Instance
+* Aurora Cluster
+
+must remain aligned.
+
+Example:
+
+```text
+mydb
+```
+
+Using different database names across components can lead to application connection failures.
+
+Single source of truth should always be maintained through Terraform variables.
+
+---
 
 # Personal Reflection
 
+The most important lesson from this project was moving beyond simply writing Terraform code and learning how infrastructure components interact with each other.
+
 The biggest learning from this development was understanding how to design reusable Terraform modules while keeping the infrastructure dynamic enough to support multiple environments from a single codebase.
 
-I also gained a deeper understanding of Terraform state management, tagging strategies, module design, resource naming conventions, validation blocks, and dynamic infrastructure creation using count expressions.
+I gained hands-on experience in:
+
+* Terraform module design
+* Dynamic infrastructure creation
+* Dependency management
+* ECS architecture
+* Service discovery
+* Load balancing
+* Secrets management
+* Database architecture
+* AWS networking
+* Terraform state management
+
+Most importantly, I learned how to reason about infrastructure rather than simply provisioning resources.
