@@ -77,6 +77,6 @@ variable "default_tags" {
   description = "Default tags to apply to the resources"
   default = {
     managed_by  = "terraform",
-    module_name = "network",
+    module_name = "network"
   }
 }
