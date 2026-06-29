@@ -48,7 +48,7 @@ jobs:
       - name: Initilalize Terraform
         run: |
           cd ${{ env.infra_path }}
-          terraform init -backend-config = vars/${{ inputs.environment }}.tfbackend
+          terraform init -backend-config=vars/${{ inputs.environment }}.tfbackend
       
       - name: Plan Terraform
         if: inputs.plan_or_apply_or_destroy == 'plan'
