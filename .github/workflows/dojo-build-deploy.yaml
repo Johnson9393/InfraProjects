@@ -99,8 +99,8 @@ jobs:
     env:
       ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
       ECS_TASK_DEFINITION: dojo-${{ inputs.environment }}-backend
-      ECS_SECURITY_GROUP: sg-0b16780f9fc87e0c4
-      ECS_SUBNET: subnet-0f4d4040b5910bc83
+      ECS_SECURITY_GROUP: sg-0a47626a406a8442d
+      ECS_SUBNET: subnet-07ddf03a673d4d688
       CONTAINER_NAME: dojo-backend-container
     steps:
       - name: Checkout code
