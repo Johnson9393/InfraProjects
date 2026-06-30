@@ -8,7 +8,7 @@ locals {
         name            = "backend",
         container_name  = "${var.prefix}-backend-container",
         security_groups = [aws_security_group.backend_sg.id],
-        image           = "023192525105.dkr.ecr.us-east-1.amazonaws.com/${var.project}-${var.environment}:${var.backend.image_tag}"
+        image = "${aws_ecr_repository.ecr_repositories["backend"].repository_url}:${var.backend.image_tag}"
         environment = [
           {
             name  = "FLASK_DEBUG",
@@ -56,7 +56,7 @@ locals {
         name            = "frontend",
         container_name  = "${var.prefix}-frontend-container",
         security_groups = [aws_security_group.frontend_sg.id],
-        image           = "023192525105.dkr.ecr.us-east-1.amazonaws.com/${var.project}-${var.environment}:${var.frontend.image_tag}"
+        image = "${aws_ecr_repository.ecr_repositories["frontend"].repository_url}:${var.frontend.image_tag}"
       }
     )
   ]
