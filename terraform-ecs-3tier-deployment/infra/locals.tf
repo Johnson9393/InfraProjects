@@ -1,5 +1,10 @@
 locals {
 
+  service_names = toset([
+    "backend",
+    "frontend"
+  ])
+
   ecs_services = [
 
     merge(
