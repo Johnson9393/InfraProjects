@@ -29,4 +29,202 @@ jobs:
     steps:
       - name: Run Mac command
         run: echo "Hello world! from Mac"
+
+
+
+# This workflow builds the dojo app and pushes the image to ECR. Its an existing flow where we migration runs with old image
+---
+name: dojo-build-deploy
+
+on:
+  push:
+    # Only trigger the workflow when there is a change in the app directory
+    branches:
+      - main
+    paths:
+      - "terraform-ecs-3tier-deployment/app/backend/**"
+      - "terraform-ecs-3tier-deployment/app/frontend/**"
+
+  # Manual trigger for the workflow
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+
+env:
+  AWS_REGION: us-east-1
+  # ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-dev-backend
+
+jobs:
+  build-and-push-image:
+    # This job:
+    # - Runs on a GitHub-hosted runner
+    # - Builds the Docker image
+    # - Authenticates to AWS ECR
+    # - Pushes the image
+    name: Build & Push - ${{ matrix.services.name }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    strategy:
+      matrix:
+        services:
+          - name: backend
+            path: terraform-ecs-3tier-deployment/app/backend
+            ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-backend
+          - name: frontend
+            path: terraform-ecs-3tier-deployment/app/frontend
+            ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-frontend
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Authenticate Docker to ECR
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Build Docker image
+      # We can build and push image with multple tags in many ways as below
+      # docker build -t sp .
+      # docker tag sp:latest ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+      # docker tag sp:latest ${{ env.ECR_REPO }}:latest
+      # docker push ${{ env.ECR_REPO }}:${{ env.ECR_TAG }}
+      # docker push ${{ env.ECR_REPO }}:latest
+
+      # Note: Above commands are the detailed way by pushing multiple images to ecr
+
+      # Below is the way to build and push using a single command
+
+      # docker build --platform linux/amd64 -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} -t ${{ env.ECR_REPO }}:latest .
+      # docker push ${{ env.ECR_REPO }} --all-tags
+
+      # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} .
+      # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:latest .
+
+      - name: Build and push ${{ matrix.services.name }} image to ECR
+        run: |
+          cd ${{ matrix.services.path }}
+          docker buildx build --platform linux/amd64 --push \
+          -t ${{ matrix.services.ecr_repo }}:${{ github.sha }} \
+          -t ${{ matrix.services.ecr_repo }}:latest .
+
+  migration:
+    name: Database Migration
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    env:
+      ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
+      ECS_TASK_DEFINITION: dojo-${{ inputs.environment }}-backend
+      ECS_SECURITY_GROUP: sg-0a47626a406a8442d
+      ECS_SUBNET: subnet-07ddf03a673d4d688
+      CONTAINER_NAME: dojo-backend-container
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run DB migration via ECS Task
+        run: |
+          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ECS_CLUSTER }} \
+            --launch-type FARGATE \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET }}],securityGroups=[${{ env.ECS_SECURITY_GROUP }}],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"${{ env.CONTAINER_NAME }}","command":["/bin/sh","migrate.sh"]}]}' \
+            --query 'tasks[0].taskArn' --output text)
+
+          echo "Migration task started: $TASK_ARN"
+          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          STOP_REASON=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" \
+            --query 'tasks[0].stoppedReason' --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed with exit code $EXIT_CODE (reason: $STOP_REASON)"
+            exit 1
+          fi  
+
+          echo "Migration completed successfully"
+
+  deploy-ecs-service:
+    name: Deploy - ${{ matrix.services.name }}
+    needs: [build-and-push-image, migration]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        services:
+          - name: backend
+            ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
+            ECS_TASK_DEF: dojo-${{ inputs.environment }}-backend
+            ECS_SERVICE: dojo-${{ inputs.environment }}-backend-service
+            ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-backend
+          - name: frontend
+            ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
+            ECS_TASK_DEF: dojo-${{ inputs.environment }}-frontend
+            ECS_SERVICE: dojo-${{ inputs.environment }}-frontend-service
+            ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Downlaod the Task definition
+      - name: Download ${{ matrix.services.name }} Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ matrix.services.ECS_TASK_DEF }} \
+            --region ${{ env.AWS_REGION }} \
+            --query taskDefinition \
+            > task-definition.json
+
+      # Update Task Definition with the commit sha image that we have pushed to ECR
+      # Better way of using jq query
+      # jq --arg IMAGE "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}" \
+      # '.containerDefinitions[0].image = $IMAGE' \
+      # task-definition.json > task-definition-updated.json
+      - name: Update ${{ matrix.services.name}} Task Definition
+        run: |
+          jq '.containerDefinitions[0].image = "${{ matrix.services.ECR_REPO }}:${{ github.sha }}"' \
+            task-definition.json > task-definition-updated.json
+
+      # Deploy to ECS
+      - name: Deploy ${{ matrix.services.name }} to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition-updated.json
+          service: ${{ matrix.services.ECS_SERVICE }}
+          cluster: ${{ matrix.services.ECS_CLUSTER }}
+          wait-for-service-stability: true
   

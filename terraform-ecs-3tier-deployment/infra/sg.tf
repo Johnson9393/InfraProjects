@@ -19,7 +19,7 @@ resource "aws_security_group" "dojo_rds_sg" {
   }
 
   tags = {
-    Name = "dojo-rds-sg"
+    Name = "${var.prefix}-${var.environment}-rds-sg"
   }
 }
 
@@ -45,7 +45,7 @@ resource "aws_security_group" "backend_sg" {
   }
 
   tags = {
-    Name = "dojo-backend-sg"
+    Name = "${var.prefix}-${var.environment}-backend-sg"
   }
 }
 
@@ -70,7 +70,7 @@ resource "aws_security_group" "frontend_sg" {
   }
 
   tags = {
-    Name = "dojo-frontend-sg"
+    Name = "${var.prefix}-${var.environment}-frontend-sg"
   }
 }
 
@@ -102,6 +102,6 @@ resource "aws_security_group" "dojo_alb_sg" {
   }
 
   tags = {
-    Name = "dojo-alb-sg"
+    Name = "${var.prefix}-${var.environment}-alb-sg"
   }
 }

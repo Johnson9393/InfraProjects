@@ -988,6 +988,384 @@ Single source of truth should always be maintained through Terraform variables.
 
 ---
 
+---
+
+# Phase 2 - GitHub Actions, ECS Deployment & Troubleshooting Learnings
+
+While implementing the CI/CD pipelines for the DevOps Dojo project, I encountered several real-world deployment issues. Instead of simply fixing them, I focused on understanding why they occurred and how production systems behave internally.
+
+This phase significantly improved my understanding of ECS, ECR, Terraform, GitHub Actions, and deployment workflows.
+
+---
+
+# Understanding Infrastructure vs Application Pipelines
+
+Initially, I thought infrastructure creation and application deployment should happen in a single pipeline.
+
+After implementing both pipelines, I realized they serve different purposes.
+
+## Infrastructure Pipeline
+
+Responsible for:
+
+- Creating AWS Resources
+- Updating Infrastructure
+- Destroying Infrastructure
+
+Example:
+
+```text
+Terraform
+      │
+      ▼
+AWS Infrastructure
+```
+
+---
+
+## Application Pipeline
+
+Responsible for:
+
+- Building Docker Images
+- Pushing Images to ECR
+- Running Database Migrations
+- Updating ECS Task Definitions
+- Deploying ECS Services
+
+Example:
+
+```text
+GitHub Actions
+        │
+        ▼
+Docker Build
+        │
+        ▼
+Amazon ECR
+        │
+        ▼
+Amazon ECS
+```
+
+### Learning
+
+Infrastructure changes happen occasionally.
+
+Application deployments happen multiple times every day.
+
+Keeping them separate improves maintainability and deployment speed.
+
+---
+
+# Understanding ECS Task Definitions
+
+One of the biggest realizations was understanding that ECS Task Definitions are only blueprints.
+
+They contain information such as:
+
+- Container Image
+- CPU
+- Memory
+- Environment Variables
+- Port Mapping
+
+However, they never communicate with Amazon ECR.
+
+Example:
+
+```text
+Task Definition
+
+Image:
+devopsdojo-dev-backend:latest
+```
+
+This is simply stored as metadata.
+
+Terraform successfully creates the Task Definition even if that image does not exist.
+
+---
+
+# Understanding When ECS Contacts Amazon ECR
+
+Initially I assumed ECS verifies the Docker image while creating the infrastructure.
+
+Later I learned that ECS only contacts Amazon ECR when a task is started.
+
+Flow:
+
+```text
+Task Definition Created
+        │
+        ▼
+No Image Validation
+        │
+        ▼
+Run ECS Task
+        │
+        ▼
+Pull Image From ECR
+```
+
+Only during task startup does ECS attempt to pull the image.
+
+---
+
+# Understanding CannotPullContainerError
+
+One of the first production-style issues I encountered was:
+
+```text
+CannotPullContainerError
+```
+
+Initially I thought ECS itself had failed.
+
+After investigation I learned that ECS was working correctly.
+
+The actual issue was that the Task Definition referenced an incorrect image.
+
+Example:
+
+```text
+devopsdojo-dev:latest
+```
+
+instead of
+
+```text
+devopsdojo-dev-backend:latest
+```
+
+Since that repository did not exist, ECS could not pull the image.
+
+### Learning
+
+Whenever I see:
+
+```text
+CannotPullContainerError
+```
+
+my first troubleshooting steps are:
+
+- Verify the ECR repository exists.
+- Verify the repository name is correct.
+- Verify the image tag exists.
+
+---
+
+# Understanding Image Not Found Errors
+
+Another important learning was distinguishing between two similar errors.
+
+## Repository Not Found
+
+```text
+CannotPullContainerError
+```
+
+Usually indicates:
+
+- Incorrect repository name
+- Repository deleted
+- Wrong AWS account
+- Wrong region
+
+---
+
+## Image Not Found
+
+Repository exists.
+
+But:
+
+```text
+latest
+```
+
+or
+
+```text
+commit-sha
+```
+
+does not exist.
+
+### Learning
+
+Repository issues and image tag issues are different problems and should be investigated separately.
+
+---
+
+# Understanding First-Time ECS Deployment
+
+One question I had was:
+
+How can Terraform successfully create ECS resources when no Docker images exist yet?
+
+The answer became clear after understanding Task Definitions.
+
+Flow:
+
+```text
+Terraform
+        │
+        ▼
+Create ECR Repository
+        │
+        ▼
+Create ECS Task Definition
+        │
+        ▼
+No Image Validation
+```
+
+Only when ECS launches a task does it attempt to pull the image.
+
+This explains why infrastructure creation succeeds even before any Docker image is pushed.
+
+---
+
+# Understanding Database Migration Tasks
+
+Initially I believed my migration task was running against the newest application image.
+
+After deeper analysis I realized:
+
+The migration task launches using the current ECS Task Definition.
+
+If the Task Definition still points to an old image, the migration also runs using that old image.
+
+Example:
+
+```text
+Task Definition
+        │
+        ▼
+Old Image
+        │
+        ▼
+Migration Task
+```
+
+### Learning
+
+If migrations depend on new application code, the Task Definition must first reference the new image.
+
+Otherwise the migration may execute outdated code.
+
+This helped me understand why many enterprise deployment pipelines update the Task Definition before executing migrations or use dedicated migration images.
+
+---
+
+# Understanding Terraform Outputs
+
+Initially I hardcoded:
+
+- Security Group IDs
+- Subnet IDs
+
+inside GitHub Actions.
+
+Later I learned Terraform Outputs provide these values dynamically.
+
+Example:
+
+```bash
+terraform output
+```
+
+returned:
+
+- Backend Security Group
+- Frontend Security Group
+- Private Subnets
+- VPC ID
+
+### Learning
+
+Infrastructure should expose important resource IDs through outputs instead of relying on hardcoded values.
+
+This makes deployments more reusable and maintainable.
+
+---
+
+# Understanding Circular Dependencies
+
+While trying to improve my Terraform design, I introduced a dependency cycle.
+
+Example:
+
+```text
+locals
+      │
+      ▼
+ECR Repository
+      │
+      ▼
+locals
+```
+
+Terraform reported:
+
+```text
+Cycle detected
+```
+
+### Learning
+
+Terraform builds a dependency graph before creating resources.
+
+Resources cannot depend on values that themselves depend on those resources.
+
+Breaking this circular dependency was one of the most valuable Terraform lessons in this project.
+
+---
+
+# Understanding ECR Repository Deletion
+
+During cleanup I received:
+
+```text
+RepositoryNotEmptyException
+```
+
+Terraform could not delete the repository because Docker images were still stored inside it.
+
+### Learning
+
+Amazon ECR will not delete non-empty repositories unless:
+
+- Images are deleted first, or
+- force_delete is configured correctly.
+
+This reinforced the importance of understanding AWS resource lifecycle during infrastructure destruction.
+
+---
+
+# Key Reflection
+
+The biggest improvement during this phase was shifting my mindset.
+
+Initially, I focused on writing Terraform and GitHub Actions.
+
+Now, I focus on understanding:
+
+- How AWS services communicate
+- Why deployments fail
+- How Terraform evaluates dependencies
+- How ECS launches containers
+- How ECR stores images
+- How GitHub Actions orchestrates deployments
+
+Instead of memorizing commands, I now try to understand the complete lifecycle of every deployment.
+
+This troubleshooting-first approach has significantly improved my confidence in designing, deploying, and debugging cloud infrastructure.
+
+---
+
 # Personal Reflection
 
 The most important lesson from this project was moving beyond simply writing Terraform code and learning how infrastructure components interact with each other.

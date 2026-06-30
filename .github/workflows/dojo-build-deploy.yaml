@@ -34,7 +34,7 @@ jobs:
     # - Pushes the image
     name: Build & Push - ${{ matrix.services.name }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment }} # it means, needs an approval before we deploy the job. configured in gh>>settings>>enviornments
 
     strategy:
       matrix:
@@ -92,15 +92,63 @@ jobs:
           -t ${{ matrix.services.ecr_repo }}:${{ github.sha }} \
           -t ${{ matrix.services.ecr_repo }}:latest .
 
+  prepare-task-definition:
+    name: Prepare Backend Task Definition
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+
+    # Outputs exposes to use the attribute in another jobs same like terraform outputs
+    outputs:
+      task_definition_arn: ${{ steps.register.outputs.task_definition_arn }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download Backend Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition dojo-${{ inputs.environment }}-backend \
+            --query taskDefinition \
+            > task-definition.json
+
+      - name: Update Backend Image
+        run: |
+          jq '.containerDefinitions[0].image = "023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-backend:${{ github.sha }}" |
+              del(
+                .taskDefinitionArn,
+                .revision,
+                .status,
+                .requiresAttributes,
+                .compatibilities,
+                .registeredAt,
+                .registeredBy
+              )' \
+            task-definition.json > task-definition-updated.json
+
+      - name: Register New Task Definition
+        id: register
+        run: |
+          TASK_DEF=$(aws ecs register-task-definition \
+            --cli-input-json file://task-definition-updated.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "task_definition_arn=$TASK_DEF" >> $GITHUB_OUTPUT
+
   migration:
     name: Database Migration
-    needs: build-and-push-image
+    needs: prepare-task-definition
     runs-on: ubuntu-latest
     env:
       ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
-      ECS_TASK_DEFINITION: dojo-${{ inputs.environment }}-backend
-      ECS_SECURITY_GROUP: sg-0a47626a406a8442d
-      ECS_SUBNET: subnet-07ddf03a673d4d688
       CONTAINER_NAME: dojo-backend-container
     steps:
       - name: Checkout code
@@ -115,45 +163,88 @@ jobs:
 
       - name: Run DB migration via ECS Task
         run: |
-          TASK_ARN=$(aws ecs run-task --cluster ${{ env.ECS_CLUSTER }} \
+          # Get Backend Security Group ID
+          ECS_SECURITY_GROUP=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=dojo-${{ inputs.environment }}-backend-sg" \
+            --query "SecurityGroups[0].GroupId" \
+            --output text)
+
+          # Get Private Subnet ID
+          ECS_SUBNET=$(aws ec2 describe-subnets \
+            --filters "Name=tag:Name,Values=dojo-${{ inputs.environment }}-private-subnet-1" \
+            --query "Subnets[0].SubnetId" \
+            --output text)
+
+          echo "Backend SG: $ECS_SECURITY_GROUP"
+          echo "Private Subnet: $ECS_SUBNET"
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
             --launch-type FARGATE \
-            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ env.ECS_SUBNET }}],securityGroups=[${{ env.ECS_SECURITY_GROUP }}],assignPublicIp=DISABLED}" \
+            --task-definition ${{ needs.prepare-task-definition.outputs.task_definition_arn }} \
+            --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNET],securityGroups=[$ECS_SECURITY_GROUP],assignPublicIp=DISABLED}" \
             --overrides '{"containerOverrides":[{"name":"${{ env.CONTAINER_NAME }}","command":["/bin/sh","migrate.sh"]}]}' \
-            --query 'tasks[0].taskArn' --output text)
+            --query 'tasks[0].taskArn' \
+            --output text)
 
           echo "Migration task started: $TASK_ARN"
-          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' --output text)
-          STOP_REASON=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" \
-            --query 'tasks[0].stoppedReason' --output text)
+          aws ecs wait tasks-stopped \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          STOP_REASON=$(aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].stoppedReason' \
+            --output text)
 
           if [ "$EXIT_CODE" != "0" ]; then
             echo "Migration failed with exit code $EXIT_CODE (reason: $STOP_REASON)"
             exit 1
-          fi  
+          fi
 
           echo "Migration completed successfully"
 
-  deploy-ecs-service:
-    name: Deploy - ${{ matrix.services.name }}
-    needs: [build-and-push-image, migration]
+  deploy-backend:
+    name: Deploy Backend
+    needs:
+      - migration
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        services:
-          - name: backend
-            ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
-            ECS_TASK_DEF: dojo-${{ inputs.environment }}-backend
-            ECS_SERVICE: dojo-${{ inputs.environment }}-backend-service
-            ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-backend
-          - name: frontend
-            ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
-            ECS_TASK_DEF: dojo-${{ inputs.environment }}-frontend
-            ECS_SERVICE: dojo-${{ inputs.environment }}-frontend-service
-            ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-frontend
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Backend
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ needs.prepare-task-definition.outputs.task_definition_arn }}
+          service: dojo-${{ inputs.environment }}-backend-service
+          cluster: dojo-${{ inputs.environment }}-cluster
+          wait-for-service-stability: true
+  
+
+  deploy-frontend:
+    name: Deploy Frontend
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+
+    env:
+      ECS_CLUSTER: dojo-${{ inputs.environment }}-cluster
+      ECS_TASK_DEF: dojo-${{ inputs.environment }}-frontend
+      ECS_SERVICE: dojo-${{ inputs.environment }}-frontend-service
+      ECR_REPO: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-frontend
 
     steps:
       - name: Checkout code
@@ -166,30 +257,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Downlaod the Task definition
-      - name: Download ${{ matrix.services.name }} Task Definition
+      - name: Download Frontend Task Definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition ${{ matrix.services.ECS_TASK_DEF }} \
-            --region ${{ env.AWS_REGION }} \
+            --task-definition ${{ env.ECS_TASK_DEF }} \
             --query taskDefinition \
             > task-definition.json
 
-      # Update Task Definition with the commit sha image that we have pushed to ECR
-      # Better way of using jq query
-      # jq --arg IMAGE "${{ env.ECR_REPO }}:${{ env.ECR_TAG }}" \
-      # '.containerDefinitions[0].image = $IMAGE' \
-      # task-definition.json > task-definition-updated.json
-      - name: Update ${{ matrix.services.name}} Task Definition
+      - name: Update Frontend Image
         run: |
-          jq '.containerDefinitions[0].image = "${{ matrix.services.ECR_REPO }}:${{ github.sha }}"' \
+          jq '.containerDefinitions[0].image = "${{ env.ECR_REPO }}:${{ github.sha }}" |
+              del(
+                .taskDefinitionArn,
+                .revision,
+                .status,
+                .requiresAttributes,
+                .compatibilities,
+                .registeredAt,
+                .registeredBy
+              )' \
             task-definition.json > task-definition-updated.json
 
-      # Deploy to ECS
-      - name: Deploy ${{ matrix.services.name }} to ECS
+      - name: Deploy Frontend
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: task-definition-updated.json
-          service: ${{ matrix.services.ECS_SERVICE }}
-          cluster: ${{ matrix.services.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+
+
+
+
+  

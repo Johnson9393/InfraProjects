@@ -881,7 +881,7 @@ DevopsDojo-dev-frontend
 The repositories are created dynamically using:
 
 ```hcl
-for_each = local.ecs_services_map
+for_each = local.service_names
 ```
 
 which means whenever a new service is added to the service configuration, a new ECR repository will automatically be created.
@@ -938,7 +938,248 @@ lifecycle {
 
 ---
 
+---
 
-![alt text](image.png)
+# 13. GitHub Actions CI/CD Pipelines
 
+The project uses GitHub Actions to fully automate infrastructure provisioning and application deployments.
+
+Two independent pipelines are created:
+
+- Infrastructure Pipeline
+- Application Build & Deploy Pipeline
+
+This separation follows the same approach used in many enterprise projects where Infrastructure and Application deployments are managed independently.
+
+---
+
+# Infrastructure Pipeline
+
+The Infrastructure Pipeline is responsible for provisioning AWS resources using Terraform.
+
+Flow:
+
+```text
+Developer Push
+        │
+        ▼
+GitHub Actions
+        │
+        ▼
+Terraform Format
+        │
+        ▼
+Terraform Validate
+        │
+        ▼
+Terraform Init
+        │
+        ▼
+Terraform Plan
+        │
+        ▼
+Terraform Apply
+        │
+        ▼
+AWS Infrastructure Created
+```
+
+Resources created include:
+
+- VPC
+- Subnets
+- Security Groups
+- Route Tables
+- NAT Gateway
+- Internet Gateway
+- ECS Cluster
+- ECS Task Definitions
+- ECS Services
+- RDS / Aurora
+- Secrets Manager
+- CloudWatch Logs
+- ECR Repositories
+- ALB
+- Target Groups
+
+The infrastructure pipeline only creates AWS resources.
+
+It does **not** build or deploy application code.
+
+---
+
+# Application Build & Deploy Pipeline
+
+Once the infrastructure is available, the application pipeline deploys the application.
+
+High Level Flow:
+
+```text
+Developer Push
+        │
+        ▼
+GitHub Actions
+        │
+        ▼
+Build Backend Image
+        │
+        ▼
+Build Frontend Image
+        │
+        ▼
+Push Images to Amazon ECR
+        │
+        ▼
+Run Database Migration
+        │
+        ▼
+Update ECS Task Definition
+        │
+        ▼
+Deploy ECS Services
+        │
+        ▼
+Application Available
+```
+
+---
+
+# Build Stage
+
+The pipeline first builds Docker images for:
+
+- Backend
+- Frontend
+
+Each image is tagged using:
+
+- Git Commit SHA
+- latest
+
+Example:
+
+```text
+backend
+ ├── latest
+ └── github.sha
+
+frontend
+ ├── latest
+ └── github.sha
+```
+
+These images are then pushed into their respective Amazon ECR repositories.
+
+---
+
+# Database Migration Stage
+
+Before deploying the latest application version, the pipeline runs database migrations.
+
+A temporary ECS Fargate Task is started.
+
+Flow:
+
+```text
+GitHub Actions
+        │
+        ▼
+Temporary ECS Task
+        │
+        ▼
+Execute migrate.sh
+        │
+        ▼
+Apply Database Changes
+        │
+        ▼
+Task Stops Automatically
+```
+
+This task is **not** the actual backend service.
+
+Its only responsibility is executing database migration scripts safely before deployment.
+
+If migration fails:
+
+- Deployment stops
+- Existing application continues serving traffic
+
+---
+
+# Deployment Stage
+
+After a successful migration:
+
+- Latest Task Definition is downloaded
+- Container Image is updated with the new Git SHA
+- ECS Service is updated
+
+Flow:
+
+```text
+Latest Docker Image
+        │
+        ▼
+Task Definition
+        │
+        ▼
+ECS Service
+        │
+        ▼
+Rolling Deployment
+        │
+        ▼
+New Application Version
+```
+
+Amazon ECS gradually replaces old running tasks with new tasks to minimize downtime.
+
+---
+
+# Why Separate Infrastructure and Application Pipelines?
+
+Infrastructure changes happen less frequently than application code changes.
+
+Example:
+
+Infrastructure Changes
+
+- New VPC
+- New Subnet
+- New RDS
+- New Security Group
+
+Application Changes
+
+- Bug Fix
+- New API
+- UI Improvements
+- New Feature
+
+Keeping these pipelines separate makes deployments faster, safer, and easier to maintain.
+
+---
+
+# Pipeline Summary
+
+## Infrastructure Pipeline
+
+Responsible for:
+
+- Creating AWS Infrastructure
+- Updating Infrastructure
+- Destroying Infrastructure
+
+## Application Pipeline
+
+Responsible for:
+
+- Building Docker Images
+- Pushing Images to ECR
+- Running Database Migrations
+- Updating ECS Task Definitions
+- Deploying ECS Services
+
+---
 

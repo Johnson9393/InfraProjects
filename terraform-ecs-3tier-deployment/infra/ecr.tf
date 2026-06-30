@@ -2,6 +2,8 @@ resource "aws_ecr_repository" "ecr_repositories" {
   for_each             = local.service_names
   name                 = "${var.project}-${var.environment}-${each.key}"
   image_tag_mutability = "MUTABLE"
+
+  force_delete = true
 }
 
 
