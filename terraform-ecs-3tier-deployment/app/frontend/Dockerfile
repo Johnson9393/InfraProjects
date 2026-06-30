@@ -17,7 +17,6 @@ COPY . .
 # Build the application
 RUN npm run build
 
-===============================================
 
 # Production stage
 FROM node:20-alpine

@@ -32,7 +32,7 @@ jobs:
     # - Builds the Docker image
     # - Authenticates to AWS ECR
     # - Pushes the image
-
+    name: Build & Push - ${{ matrix.services.name }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
 
@@ -85,7 +85,7 @@ jobs:
       # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:${{ env.ECR_TAG }} .
       # docker buildx build --platform linux/amd64 --push -t ${{ env.ECR_REPO }}:latest .
 
-      - name: Build and push ${{ matrix.services.name }}image to ECR
+      - name: Build and push ${{ matrix.services.name }} image to ECR
         run: |
           cd ${{ matrix.services.path }}
           docker buildx build --platform linux/amd64 --push \
@@ -93,6 +93,7 @@ jobs:
           -t ${{ matrix.services.ecr_repo }}:latest .
 
   migration:
+    name: Database Migration
     needs: build-and-push-image
     runs-on: ubuntu-latest
     env:
@@ -137,6 +138,7 @@ jobs:
           echo "Migration completed successfully"
 
   deploy-ecs-service:
+    name: Deploy - ${{ matrix.services.name }}
     needs: [build-and-push-image, migration]
     runs-on: ubuntu-latest
     strategy:
