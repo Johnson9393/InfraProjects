@@ -41,6 +41,7 @@ resource "aws_db_instance" "dojo_rds_instance" {
   skip_final_snapshot     = var.rds_instance_config.skip_final_snapshot
   allocated_storage       = var.rds_instance_config.allocated_storage
   apply_immediately       = var.rds_instance_config.apply_immediately
+  performance_insights_enabled = true
 
   tags = {
     Name = "${var.prefix}-${var.environment}-rds-instance"

@@ -11,6 +11,11 @@ resource "aws_ecs_cluster" "dojo_cluster" {
   service_connect_defaults {
     namespace = aws_service_discovery_http_namespace.dojo_namespace.arn
   }
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 
