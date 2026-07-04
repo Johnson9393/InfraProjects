@@ -171,7 +171,7 @@ jobs:
 
           # Get Private Subnet ID
           ECS_SUBNET=$(aws ec2 describe-subnets \
-            --filters "Name=tag:Name,Values=dojo-${{ inputs.environment }}-private-subnet-1" \
+            --filters "Name=tag:Name,Values=${{ inputs.environment }}-devopsdojo-private-1" \
             --query "Subnets[0].SubnetId" \
             --output text)
 
