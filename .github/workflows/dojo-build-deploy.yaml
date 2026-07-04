@@ -216,6 +216,7 @@ jobs:
     name: Deploy Backend
     needs:
       - migration
+      - prepare-task-definition
     runs-on: ubuntu-latest
 
     steps:
