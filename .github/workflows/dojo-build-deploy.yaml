@@ -212,11 +212,12 @@ jobs:
 
           echo "Migration completed successfully"
 
+  
   deploy-backend:
     name: Deploy Backend
     needs:
-      - migration
       - prepare-task-definition
+      - migration
     runs-on: ubuntu-latest
 
     steps:
@@ -228,13 +229,21 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy Backend
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ needs.prepare-task-definition.outputs.task_definition_arn }}
-          service: dojo-${{ inputs.environment }}-backend-service
-          cluster: dojo-${{ inputs.environment }}-cluster
-          wait-for-service-stability: true
-  
+        shell: bash
+        run: |
+          echo "Deploying Task Definition:"
+          echo "${{ needs.prepare-task-definition.outputs.task_definition_arn }}"
+
+          aws ecs update-service \
+            --cluster dojo-${{ inputs.environment }}-cluster \
+            --service dojo-${{ inputs.environment }}-backend-service \
+            --task-definition "${{ needs.prepare-task-definition.outputs.task_definition_arn }}"
+
+          aws ecs wait services-stable \
+            --cluster dojo-${{ inputs.environment }}-cluster \
+            --services dojo-${{ inputs.environment }}-backend-service
+
+          echo "Backend deployment completed successfully."
 
   deploy-frontend:
     name: Deploy Frontend
