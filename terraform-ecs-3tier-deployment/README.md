@@ -399,7 +399,62 @@ Backend Logs
 
 ---
 
-# 10. ECS Services
+---
+
+# 10. CloudWatch Dashboard
+
+A CloudWatch Dashboard is created using Terraform to provide a centralized view of the application's health and performance from a single place.
+
+The dashboard combines infrastructure and load balancer metrics to quickly identify resource bottlenecks, application latency, traffic patterns, and service health during deployments and load testing.
+
+Current Dashboard Metrics:
+
+### ECS Metrics
+
+- Backend CPU Utilization
+- Backend Memory Utilization
+- Frontend CPU Utilization
+- Frontend Memory Utilization
+
+Purpose:
+
+- Monitor ECS resource utilization
+- Identify CPU or Memory bottlenecks
+
+---
+
+### Application Load Balancer (ALB) Metrics
+
+- Request Count
+- Target Response Time
+- Target 4XX Errors
+- Target 5XX Errors
+
+Purpose:
+
+- Monitor incoming traffic
+- Measure application latency
+- Detect client-side and server-side errors
+
+---
+
+### Target Health Metrics
+
+- Healthy Host Count
+- UnHealthy Host Count
+
+Purpose:
+
+- Verify ECS task health
+- Detect unhealthy targets during deployments or application failures
+
+---
+
+The dashboard serves as a single-pane monitoring solution for infrastructure validation, performance testing, deployments, and production troubleshooting.
+
+---
+
+# 11. ECS Services
 
 ECS Services are responsible for running and maintaining ECS Tasks.
 
@@ -556,7 +611,7 @@ No Target Group Registration
 
 ---
 
-# 11. Database Layer (RDS & Aurora)
+# 12. Database Layer (RDS & Aurora)
 
 The Database Layer is responsible for storing and retrieving application data.
 
@@ -857,7 +912,7 @@ This architecture provides a balance between simplicity in development and scala
 
 ---
 
-# 12. Amazon Elastic Container Registry (ECR)
+# 13. Amazon Elastic Container Registry (ECR)
 
 ECR repositories are created dynamically using the same service configuration used by ECS.
 
@@ -938,9 +993,101 @@ lifecycle {
 
 ---
 
+# 14. Amazon SNS Notifications
+
+Amazon SNS (Simple Notification Service) is used to send email notifications whenever a CloudWatch Alarm enters the **ALARM** state.
+
+An SNS Topic acts as the notification channel, and one or more email subscriptions can be attached to receive alerts.
+
+Flow:
+
+```text
+CloudWatch Alarm
+        │
+        ▼
+SNS Topic
+        │
+        ▼
+Email Notification
+```
+
+Current Configuration:
+
+- SNS Topic
+- Email Subscription
+
+Purpose:
+
+- Receive infrastructure alerts
+- Notify high CPU or Memory utilization
+- Notify ALB response time and HTTP error alarms
+- Provide proactive monitoring for production workloads
+
 ---
 
-# 13. GitHub Actions CI/CD Pipelines
+# 15. CloudWatch Alarms
+
+CloudWatch Alarms continuously monitor AWS metrics and automatically notify the operations team whenever a configured threshold is breached.
+
+The alarms are integrated with Amazon SNS to send email notifications when an alarm enters the **ALARM** state and again when it returns to the **OK** state.
+
+Flow:
+
+```text
+CloudWatch Metric
+        │
+        ▼
+CloudWatch Alarm
+        │
+        ▼
+Amazon SNS
+        │
+        ▼
+Email Notification
+```
+
+Current Infrastructure Alarms:
+
+### ECS Service Monitoring
+
+- Backend CPU Utilization (>80%)
+- Backend Memory Utilization (>80%)
+- Frontend CPU Utilization (>80%)
+- Frontend Memory Utilization (>80%)
+
+Purpose:
+
+- Detect resource bottlenecks
+- Identify CPU or Memory pressure before application failures occur
+
+---
+
+### Application Load Balancer (ALB)
+
+- Target Response Time (>3 seconds)
+- Target 4XX Errors
+- Target 5XX Errors
+- UnHealthy Host Count
+
+Purpose:
+
+- Monitor application latency
+- Detect client-side and server-side errors
+- Identify unhealthy ECS targets behind the Load Balancer
+
+---
+
+Alarm Configuration:
+
+- Evaluation Period: 2 consecutive 60-second intervals
+- Notification Service: Amazon SNS
+- Email notifications for both **ALARM** and **OK** states
+
+This provides proactive monitoring and early detection of infrastructure issues before they impact application availability.
+
+---
+
+# 16. GitHub Actions CI/CD Pipelines
 
 The project uses GitHub Actions to fully automate infrastructure provisioning and application deployments.
 

@@ -130,3 +130,8 @@ variable "aurora_instance_config" {
     publicly_accessible = bool
   })
 }
+
+variable "alarm_email" {
+  description = "Email address to receive CloudWatch alarm notifications."
+  type        = string
+}

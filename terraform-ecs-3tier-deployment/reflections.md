@@ -1366,6 +1366,203 @@ This troubleshooting-first approach has significantly improved my confidence in 
 
 ---
 
+# Performance Testing Reflections
+
+## Scenario
+
+I deployed a quiz application on AWS using the following architecture:
+
+```
+k6
+ │
+ ▼
+Route53
+ │
+ ▼
+Application Load Balancer
+ │
+ ▼
+ECS Service (1 Backend Task)
+ │
+ ▼
+RDS
+```
+
+The objective was to understand how the application behaves under concurrent users and identify the first infrastructure bottleneck.
+
+---
+
+# Observations
+
+## Smoke Test
+
+Results:
+
+- Application reachable
+- Complete quiz journey successful
+- All API validations passed
+- No HTTP failures
+- P95 response time well within threshold
+
+Conclusion:
+
+The application was healthy and ready for performance testing.
+
+---
+
+## Load Test
+
+Results:
+
+- 50 Virtual Users
+- 4300 HTTP Requests
+- 1075 Quiz Journeys
+- HTTP Failures = 0%
+- No 5XX Errors
+- P95 Response Time = 3.48 seconds
+
+Although every request completed successfully, the response time increased significantly under load.
+
+---
+
+# Infrastructure Analysis
+
+## ECS Metrics
+
+Observed:
+
+- CPU Utilization increased from approximately 3% to nearly 100%.
+- Memory Utilization remained around 19%.
+
+Conclusion:
+
+The backend container exhausted its CPU resources but did not experience memory pressure.
+
+---
+
+## ALB Metrics
+
+Observed:
+
+- Request Count increased as expected.
+- Target Response Time increased from approximately 105 ms to around 2.8 seconds.
+- No Target 5XX Errors.
+
+Conclusion:
+
+The ALB was functioning correctly. Increased response time was caused by the backend taking longer to process requests.
+
+---
+
+## CloudWatch Logs
+
+Observed:
+
+- No application exceptions.
+- No database errors.
+- No HTTP 500 responses.
+
+Conclusion:
+
+The application remained stable throughout the load test.
+
+---
+
+# Bottleneck
+
+The performance bottleneck was the ECS backend task.
+
+Evidence:
+
+- CPU reached nearly 100%.
+- Memory remained stable.
+- Response time increased significantly.
+- No request failures occurred.
+
+Conclusion:
+
+The backend became **CPU-bound**, not memory-bound.
+
+---
+
+# Key Learning
+
+A system can remain healthy while becoming slower.
+
+High CPU utilization does **not** automatically mean the application will return 500 errors.
+
+Instead, users may simply experience increased response times.
+
+---
+
+# Interview Question
+
+## Q: How did you identify the bottleneck?
+
+**Answer:**
+
+I executed a k6 load test against my application deployed on AWS ECS behind an Application Load Balancer. During the test, I monitored CloudWatch Container Insights, ALB metrics, and CloudWatch Logs simultaneously.
+
+Container Insights showed CPU utilization increasing from around 3% to nearly 100%, while memory utilization remained stable at approximately 19%. At the same time, the ALB Target Response Time increased from about 105 ms to nearly 2.8 seconds. Despite the increased latency, there were no HTTP failures or 5XX responses, and CloudWatch Logs showed no application exceptions.
+
+Based on these observations, I concluded that the backend ECS task had become CPU-bound. The application remained stable and continued serving requests, but response times increased because the single ECS task had exhausted its available CPU capacity.
+
+---
+
+## Q: Why were there no 500 errors even though CPU reached 100%?
+
+**Answer:**
+
+High CPU utilization does not necessarily cause application failures. In this case, the backend still had enough resources to process every request, but it required more time to do so. As a result, response times increased while all requests continued to complete successfully.
+
+---
+
+## Q: Why did response time increase?
+
+**Answer:**
+
+The backend container became CPU-bound. Since only one ECS task was processing all incoming requests, the application required more time to complete each request as concurrency increased. This caused the ALB Target Response Time and k6 response times to increase.
+
+---
+
+## Q: Why wasn't memory the bottleneck?
+
+**Answer:**
+
+CloudWatch Container Insights showed memory utilization remained almost constant throughout the test, while CPU utilization increased dramatically. This indicates the workload required additional processing power rather than additional memory.
+
+---
+
+## Q: What would you improve next?
+
+**Answer:**
+
+The next improvements would be:
+
+- Increase ECS task CPU allocation.
+- Enable ECS Service Auto Scaling.
+- Compare performance before and after scaling.
+- Optimize CPU-intensive application logic if necessary.
+- Configure CloudWatch Dashboards and Alarms for proactive monitoring.
+
+---
+
+# Final Reflection
+
+This exercise demonstrated the complete performance testing workflow:
+
+- Deploy application to AWS.
+- Validate functionality using a smoke test.
+- Execute a load test using k6.
+- Monitor ECS, ALB, and CloudWatch simultaneously.
+- Correlate infrastructure metrics with application performance.
+- Identify the system bottleneck.
+- Recommend scaling and optimization strategies based on evidence.
+
+The most important lesson was learning to correlate **k6 metrics**, **CloudWatch Container Insights**, **ALB metrics**, and **application logs** to accurately diagnose performance issues instead of relying on a single metric.
+
+---
+
 # Personal Reflection
 
 The most important lesson from this project was moving beyond simply writing Terraform code and learning how infrastructure components interact with each other.

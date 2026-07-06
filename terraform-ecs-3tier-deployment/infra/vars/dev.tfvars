@@ -1,5 +1,6 @@
 environment = "dev"
 db_name = "dojodb"
+alarm_email = "johnson.johnny0903@gmail.com"
 
 public_subnets = [
   {
