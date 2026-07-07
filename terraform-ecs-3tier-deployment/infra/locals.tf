@@ -72,6 +72,8 @@ locals {
   rds_connection_string = var.environment == "prod" ? "postgresql://${aws_rds_cluster.dojo_rds_cluster[0].master_username}:${random_password.rds_password.result}@${aws_rds_cluster.dojo_rds_cluster[0].endpoint}:${aws_rds_cluster.dojo_rds_cluster[0].port}/${aws_rds_cluster.dojo_rds_cluster[0].database_name}" : "postgresql://${aws_db_instance.dojo_rds_instance[0].username}:${random_password.rds_password.result}@${aws_db_instance.dojo_rds_instance[0].address}:${aws_db_instance.dojo_rds_instance[0].port}/${aws_db_instance.dojo_rds_instance[0].db_name}"
 
   db_host = var.environment == "prod" ? aws_rds_cluster.dojo_rds_cluster[0].endpoint : aws_db_instance.dojo_rds_instance[0].address
+
+  backend_metric_namespace = "${var.environment}/${var.project}/Backend"
 }
 
 

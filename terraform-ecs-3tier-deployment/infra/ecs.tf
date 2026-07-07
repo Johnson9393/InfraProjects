@@ -14,7 +14,7 @@ resource "aws_ecs_cluster" "dojo_cluster" {
 
   setting {
     name  = "containerInsights"
-    value = "enabled"
+    value = "disabled"
   }
 }
 

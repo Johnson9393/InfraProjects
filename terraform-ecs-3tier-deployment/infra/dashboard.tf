@@ -32,7 +32,7 @@
 
 
 resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "${var.prefix}-${var.environment}-${var.project}-dashboard"
+  dashboard_name = "${var.prefix}-${var.environment}-dashboard"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -71,7 +71,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         properties = {
           title  = "Backend Memory Utilization"
           region = var.aws_region
-          stat   = "Average"
+          stat   = "Average" #means the average of all the data points in the period
           period = 60
 
           metrics = [
@@ -146,7 +146,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         properties = {
           title  = "ALB Request Count"
           region = var.aws_region
-          stat   = "Sum"
+          stat   = "Sum" #means the sum of all the data points in the period
           period = 60
 
           metrics = [
@@ -274,6 +274,139 @@ resource "aws_cloudwatch_dashboard" "main" {
               aws_alb.dojo_alb.arn_suffix,
               "TargetGroup",
               aws_alb_target_group.dojo_target_group.arn_suffix
+            ]
+          ]
+        }
+      },
+      #EMF widgets, Application Monitoring
+      {
+        type   = "metric"
+        x      = 0
+        y      = 30
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "Backend Request Duration Overall"
+          region = var.aws_region
+          stat   = "Average"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "RequestDurationOverall",
+              "Service",
+              "backend"
+            ]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 30
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "API Request Duration"
+          region = var.aws_region
+          stat   = "Average"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "RequestDuration"
+            ]
+          ]
+        }
+      },
+
+      {
+        type   = "metric"
+        x      = 16
+        y      = 30
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "HTTP Request Count"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "HttpRequestCount"
+            ]
+          ]
+        }
+      },
+
+      # Log Metrics Widgets of Application
+      {
+        type   = "metric"
+        x      = 0
+        y      = 36
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "Backend 5XX Errors"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "Backend5xxCount"
+            ]
+          ]
+        }
+      },
+
+      {
+        type   = "metric"
+        x      = 8
+        y      = 36
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "Backend ERROR Logs"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "BackendErrorCount"
+            ]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 36
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "Frontend Proxy Errors"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+
+          metrics = [
+            [
+              local.backend_metric_namespace,
+              "FrontendProxyErrorCount"
             ]
           ]
         }

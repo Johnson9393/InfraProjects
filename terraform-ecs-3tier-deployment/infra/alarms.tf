@@ -109,7 +109,7 @@ resource "aws_cloudwatch_metric_alarm" "frontend_memory_high" {
   statistic = "Average"
   period    = 60
 
-  evaluation_periods  = 2 #CloudWatch waits for 2 consecutive 60-second periods before triggering to avoid short cpu spike
+  evaluation_periods  = 2 #Sends an email when this alarm enters the ALARM state.
   threshold           = 80
   comparison_operator = "GreaterThanThreshold"
 
@@ -140,7 +140,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time_high" {
   statistic = "Average"
   period    = 60
 
-  evaluation_periods  = 2 #CloudWatch waits for 2 consecutive 60-second periods before triggering to avoid short cpu spike
+  evaluation_periods  = 2 #Sends an email when this alarm enters the ALARM state.
   threshold           = 3
   comparison_operator = "GreaterThanThreshold"
 
@@ -171,7 +171,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_target_4XX" {
   statistic = "Sum"
   period    = 60
 
-  evaluation_periods  = 2 #CloudWatch waits for 2 consecutive 60-second periods before triggering to avoid short cpu spike
+  evaluation_periods  = 2 #Sends an email when this alarm enters the ALARM state.
   threshold           = 1
   comparison_operator = "GreaterThanThreshold"
 
@@ -254,6 +254,122 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts_count" {
   ]
 }
 
+# -----------------------------------------------------------------------------
+# Application Monitoring Alarms (EMF & Log Metrics)
+# -----------------------------------------------------------------------------
+
+resource "aws_cloudwatch_metric_alarm" "backend_request_duration_high" {
+  alarm_name        = "${var.prefix}-${var.environment}-backend-request-duration-high"
+  alarm_description = "Backend average request duration is above 2000 ms."
+
+  namespace   = local.backend_metric_namespace
+  metric_name = "RequestDurationOverall"
+
+  statistic = "Average"
+  period    = 60
+
+  evaluation_periods  = 2
+  threshold           = 2000
+  comparison_operator = "GreaterThanThreshold"
+
+  treat_missing_data = "notBreaching"
+
+  dimensions = {
+    Service = "backend"
+  }
+
+  alarm_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  ok_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  insufficient_data_actions = []
+}
+
+
+resource "aws_cloudwatch_metric_alarm" "backend_5xx_high" {
+  alarm_name        = "${var.prefix}-${var.environment}-backend-5xx"
+  alarm_description = "Backend returned one or more HTTP 5XX responses."
+
+  namespace   = local.backend_metric_namespace
+  metric_name = "Backend5xxCount"
+
+  statistic = "Sum"
+  period    = 60 #means the sum of all the data points in the period
+
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+
+  treat_missing_data = "notBreaching"
+
+  alarm_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  ok_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  insufficient_data_actions = []
+}
+
+resource "aws_cloudwatch_metric_alarm" "backend_error_high" {
+  alarm_name        = "${var.prefix}-${var.environment}-backend-error"
+  alarm_description = "Backend application logged one or more ERROR messages."
+
+  namespace   = local.backend_metric_namespace
+  metric_name = "BackendErrorCount"
+
+  statistic = "Sum"
+  period    = 60 #means the sum of all the data points in the period
+
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+
+  treat_missing_data = "notBreaching"
+
+  alarm_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  ok_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  insufficient_data_actions = [] #means no action will be taken when there is insufficient data to evaluate the alarm
+}
+
+resource "aws_cloudwatch_metric_alarm" "frontend_proxy_error_high" {
+  alarm_name        = "${var.prefix}-${var.environment}-frontend-proxy-error"
+  alarm_description = "Frontend failed to communicate with the backend."
+
+  namespace   = local.backend_metric_namespace
+  metric_name = "FrontendProxyErrorCount"
+
+  statistic = "Sum"
+  period    = 60
+
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+
+  treat_missing_data = "notBreaching"
+
+  alarm_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  ok_actions = [
+    aws_sns_topic.cloudwatch_alerts.arn
+  ]
+
+  insufficient_data_actions = []
+}
 
 
 

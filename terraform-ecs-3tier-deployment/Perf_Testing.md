@@ -6,7 +6,46 @@
 
 ![alt text](screenshots/LoadResults.png)
 
+![alt text](screenshots/cloudwatch_dashboard.png)
 
+![alt text](screenshots/alarms.png)
+
+![alt text](screenshots/sns_email.png)
+
+---
+
+## CloudWatch Dashboard Layout
+
+```text
+CloudWatch Dashboard
+│
+├── Infrastructure Monitoring
+│   ├── ECS
+│   │   ├── Backend CPU Utilization
+│   │   ├── Backend Memory Utilization
+│   │   ├── Frontend CPU Utilization
+│   │   └── Frontend Memory Utilization
+│   │
+│   └── Application Load Balancer (ALB)
+│       ├── Request Count
+│       ├── Target Response Time
+│       ├── Target 4XX Errors
+│       ├── Target 5XX Errors
+│       ├── Healthy Host Count
+│       └── UnHealthy Host Count
+│
+├── Application Monitoring (EMF)
+│   ├── Backend Request Duration Overall
+│   ├── API Request Duration
+│   └── HTTP Request Count
+│
+└── Application Monitoring (Log Metric Filters)
+    ├── Backend 5XX Errors
+    ├── Backend ERROR Logs
+    └── Frontend Proxy Errors
+```
+
+---
 
 # Performance Testing Guide (k6 + AWS ECS)
 
@@ -312,6 +351,254 @@ The application stayed functional but response times increased because the singl
 - Response times stayed well below the configured threshold.
 - No HTTP failures or 5XX errors occurred.
 - **Conclusion:** Frontend handled the workload comfortably and did not become a bottleneck.
+
+---
+
+## CloudWatch Monitoring Validation
+
+After deploying the infrastructure and application, the complete monitoring stack was validated using k6 load testing.
+
+### Infrastructure Monitoring
+
+The following monitoring components were provisioned using Terraform:
+
+- CloudWatch Dashboard
+- CloudWatch Alarms
+- Amazon SNS Topic
+- Email Subscription
+
+The dashboard includes:
+
+- Backend CPU Utilization
+- Backend Memory Utilization
+- Frontend CPU Utilization
+- Frontend Memory Utilization
+- ALB Request Count
+- ALB Target Response Time
+- ALB Target 4XX Errors
+- ALB Target 5XX Errors
+- Healthy Host Count
+- UnHealthy Host Count
+
+CloudWatch Alarms were configured for:
+
+- Backend CPU (>80%)
+- Backend Memory (>80%)
+- Frontend CPU (>80%)
+- Frontend Memory (>80%)
+- ALB Target Response Time (>3 seconds)
+- ALB Target 4XX Errors
+- ALB Target 5XX Errors
+- UnHealthy Host Count
+
+Amazon SNS was integrated with CloudWatch Alarms to send email notifications whenever an alarm entered the **ALARM** state and again when it returned to the **OK** state.
+
+---
+
+## Monitoring Validation
+
+After deployment:
+
+- Verified the CloudWatch Dashboard was displaying live ECS and ALB metrics.
+- Verified all CloudWatch Alarms were initially in the **OK** state.
+- Verified the SNS Email Subscription was successfully confirmed.
+- Executed backend and frontend k6 load tests.
+- Observed live CPU, Memory, Request Count and Response Time changes on the dashboard.
+- Backend CPU utilization exceeded the configured threshold (>80%), causing the CloudWatch Alarm to transition from **OK → ALARM**.
+- Successfully received an SNS email notification for the alarm.
+- After the load test completed and CPU utilization returned to normal, the alarm transitioned from **ALARM → OK**, and a recovery email was successfully received.
+
+This validated the complete monitoring pipeline end-to-end.
+
+```text
+Application
+      │
+      ▼
+CloudWatch Metrics
+      │
+      ▼
+CloudWatch Dashboard
+      │
+      ▼
+CloudWatch Alarm
+      │
+      ▼
+Amazon SNS
+      │
+      ▼
+Email Notification
+```
+
+---
+
+## Application Monitoring
+
+Application monitoring extends infrastructure monitoring by collecting application-specific metrics that AWS does not provide by default.
+
+### Embedded Metric Format (EMF)
+
+The application is already instrumented to publish custom metrics using **Embedded Metric Format (EMF)**.
+
+Current EMF Metrics include:
+
+- RequestDurationOverall
+- RequestDuration
+- HttpRequestCount
+
+These metrics are automatically created as CloudWatch Custom Metrics without requiring Log Metric Filters.
+
+EMF is primarily used to monitor:
+
+- Request Latency
+- API Performance
+- Request Throughput
+- Business/Application Metrics
+
+Flow:
+
+```text
+Application
+      │
+      ▼
+EMF Logs
+      │
+      ▼
+CloudWatch Custom Metrics
+```
+
+---
+
+### Log Metric Filters
+
+The application also generates structured JSON logs.
+
+CloudWatch Log Metric Filters convert matching log patterns into CloudWatch Custom Metrics.
+
+Examples include:
+
+- Backend5xxCount
+- BackendErrorCount
+- FrontendProxyErrorCount
+
+These metrics can then be used to build Dashboards and CloudWatch Alarms.
+
+Flow:
+
+```text
+Application Logs
+        │
+        ▼
+CloudWatch Log Metric Filter
+        │
+        ▼
+CloudWatch Custom Metric
+```
+
+Unlike EMF, Log Metric Filters must be explicitly created in Terraform.
+
+---
+
+---
+
+## Understanding EMF Metrics and Dimensions
+
+### Metric vs Dimension
+
+A **Metric** represents **what is being measured**, while a **Dimension** identifies **which resource or category the metric belongs to**.
+
+Examples:
+
+| Metric | Dimension |
+|--------|-----------|
+| CPUUtilization | ClusterName, ServiceName |
+| MemoryUtilization | ClusterName, ServiceName |
+| RequestDuration | Endpoint, Method, StatusClass |
+| HttpRequestCount | Endpoint, Method, StatusClass |
+| RequestDurationOverall | Service |
+
+---
+
+### Example
+
+Suppose a user sends:
+
+```text
+POST /leaderboard
+```
+
+The backend returns:
+
+```text
+HTTP 500
+```
+
+and the request completes in **850 ms**.
+
+CloudWatch EMF publishes:
+
+**Metric**
+
+```text
+RequestDuration = 850 ms
+```
+
+**Dimensions**
+
+```text
+Endpoint    = leaderboard
+Method      = POST
+StatusClass = 5xx
+```
+
+CloudWatch stores the metric together with these dimensions, allowing you to filter and analyze latency for a specific API, HTTP method, and response status.
+
+---
+
+### EMF Metrics Used in This Project
+
+**RequestDurationOverall**
+
+- Overall average response time of the backend service.
+- Dimension: `Service = backend`
+
+**RequestDuration**
+
+- Average response time for a specific API.
+- Dimensions:
+  - Endpoint
+  - Method
+  - StatusClass
+
+**HttpRequestCount**
+
+- Number of requests received by a specific API.
+- Dimensions:
+  - Endpoint
+  - Method
+  - StatusClass
+
+---
+
+### Key Takeaway
+
+Think of it as:
+
+- **Metric → What is being measured?**
+- **Dimension → Which resource or request does the metric belong to?**
+
+This allows CloudWatch to drill down from overall service health to individual API performance, making it easier to identify the exact endpoint, HTTP method, or status code causing an issue.
+
+---
+
+## Key Learning
+
+Infrastructure Monitoring and Application Monitoring complement each other.
+
+- **Infrastructure Monitoring** answers: *Is the AWS infrastructure healthy?* (CPU, Memory, ALB, ECS)
+
+- **Application Monitoring** answers: *Is the application healthy?* (Latency, Request Count, 5XX Errors, Proxy Errors, Business Metrics)
+
+Together they provide a complete production-grade monitoring solution for deployments, performance testing, troubleshooting and incident response.
 
 ---
 
