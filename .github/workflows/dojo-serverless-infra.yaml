@@ -1,5 +1,5 @@
-# SP Infra creation 
-name: Terraform dojo app infra
+# DevopsDojo Infra creation 
+name: Terraform dojo serverless infra
 
 on:
   workflow_dispatch:

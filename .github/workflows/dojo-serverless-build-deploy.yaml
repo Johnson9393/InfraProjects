@@ -1,6 +1,6 @@
 # This workflow builds the dojo app and pushes the image to ECR
 ---
-name: dojo-build-deploy
+name: dojo-serverless-build-deploy
 
 on:
   push:
