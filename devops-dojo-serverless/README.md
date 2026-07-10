@@ -1,18 +1,18 @@
-# Event-Driven File Processing System using AWS
+# Event-Driven Quiz Processing System on AWS
 
-## Project Overview
+## Introduction
 
-This project is an enhancement of my existing **DevOps Dojo** application, which was previously deployed on AWS using **Terraform**, **GitHub Actions**, **Docker**, **Amazon ECS Fargate**, and **Amazon RDS**.
+This project is an enhanced version of my existing **DevOps Dojo** application, which is fully deployed on AWS using **Terraform**, **GitHub Actions**, **Docker**, **Amazon ECS Fargate**, and **Amazon RDS**.
 
-Instead of modifying the existing project, a separate copy has been created to implement a **production-style event-driven architecture** while preserving the original application.
+The objective of this project is to redesign the existing file upload workflow by implementing an **event-driven serverless architecture** while reusing the existing infrastructure and CI/CD pipeline.
 
-## Project Objective
+Instead of modifying the original project, a separate copy has been created to safely implement and validate the new architecture without affecting the existing application.
 
-The objective of this project is to redesign the existing file upload workflow by introducing a **serverless event-driven pipeline** using **Amazon S3** and **AWS Lambda**.
+---
 
-Instead of writing uploaded files directly to the database, the application will upload CSV files to an S3 bucket. An S3 ObjectCreated event will automatically trigger a Lambda function, which will validate the uploaded file and insert the data into Amazon RDS.
+# Problem Statement
 
-## Existing Architecture
+In the current application, uploaded quiz or interview question files are processed by the backend service and the data is written directly into Amazon RDS.
 
 ```text
 User
@@ -21,13 +21,21 @@ User
 Frontend
    │
    ▼
-Backend (ECS)
+Backend (Amazon ECS)
    │
    ▼
 Amazon RDS
 ```
 
-## Target Architecture
+Although this approach works, it tightly couples the application with database processing. As the size and number of uploaded files increase, the backend becomes responsible for file validation, parsing, and database insertion, making the application less scalable and harder to maintain.
+
+---
+
+# Proposed Solution
+
+To overcome these limitations, the upload workflow will be redesigned using an event-driven architecture.
+
+Instead of processing uploaded files directly, the backend will upload the file to Amazon S3. An **S3 ObjectCreated** event will automatically invoke an AWS Lambda function, which will validate the uploaded CSV file and insert the records into Amazon RDS.
 
 ```text
 User
@@ -36,7 +44,7 @@ User
 Frontend
    │
    ▼
-Backend (ECS)
+Backend (Amazon ECS)
    │
 Upload CSV
    ▼
@@ -46,25 +54,57 @@ ObjectCreated Event
    ▼
 AWS Lambda
    │
-Validate & Process CSV
+Validate & Process File
    ▼
 Amazon RDS
 ```
 
-## Key Enhancements
+This design separates file upload from file processing, resulting in a more modular, scalable, and production-ready architecture.
 
-* Implement an event-driven architecture using Amazon S3 and AWS Lambda.
-* Restrict uploads to CSV files only.
-* Automatically trigger Lambda when a new file is uploaded.
-* Validate uploaded data before inserting it into the database.
-* Store successfully processed files in an **archive** location.
-* Move failed files to an **error** location for troubleshooting and reprocessing.
-* Secure database connectivity using VPC, Security Groups, IAM Roles, and AWS Secrets Manager.
-* Provision all AWS infrastructure using Terraform.
-* Deploy infrastructure and application changes through GitHub Actions CI/CD.
-* Implement logging and monitoring using Amazon CloudWatch.
+---
 
-## Technologies Used
+# Why Introduce Amazon S3?
+
+The purpose of introducing Amazon S3 is **not to reduce the database workload**, since the same data is ultimately stored in Amazon RDS.
+
+Instead, S3 acts as a durable landing zone for uploaded files and provides several architectural benefits:
+
+* Decouples file upload from data processing.
+* Allows asynchronous processing using AWS Lambda.
+* Preserves the original uploaded file for auditing and troubleshooting.
+* Enables failed files to be reprocessed without requiring another upload.
+* Simplifies future integrations with additional AWS services such as Amazon SQS, AWS Glue, or analytics pipelines.
+
+---
+
+# Project Objectives
+
+The primary objectives of this project are:
+
+* Redesign the existing upload workflow using an event-driven architecture.
+* Allow only CSV files to be uploaded through the application.
+* Automatically process uploaded files using AWS Lambda.
+* Store transaction or quiz data in Amazon RDS after validation.
+* Reuse the existing Terraform modules and GitHub Actions CI/CD pipeline.
+* Follow AWS best practices for networking, security, automation, and scalability.
+
+---
+
+# Current Scope
+
+The first phase of this project focuses on:
+
+* Understanding the existing upload workflow.
+* Modifying the application to accept only CSV uploads.
+* Updating the backend to upload files to Amazon S3.
+* Preparing the infrastructure for AWS Lambda integration.
+* Reusing the existing Infrastructure as Code (Terraform) and CI/CD pipeline.
+
+Additional enhancements will be documented as each implementation phase is completed.
+
+---
+
+# Technology Stack
 
 * Python
 * Terraform
@@ -75,13 +115,9 @@ Amazon RDS
 * Amazon S3
 * AWS Lambda
 * Amazon RDS (PostgreSQL)
-* IAM
-* VPC
+* AWS IAM
+* Amazon VPC
 * Security Groups
-* VPC Endpoints
-* AWS Secrets Manager
-* Amazon CloudWatch
+* CloudWatch
 
-## Project Goal
-
-The primary goal of this project is to gain hands-on experience in designing and implementing a real-world, cloud-native event-driven architecture while following AWS best practices for scalability, reliability, security, and automation. This project demonstrates Infrastructure as Code (IaC), CI/CD, serverless computing, and modern cloud design patterns commonly used in production environments.
+---
