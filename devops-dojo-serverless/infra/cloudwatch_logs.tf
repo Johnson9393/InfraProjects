@@ -10,7 +10,7 @@ resource "aws_cloudwatch_log_metric_filter" "backend_5xx" {
   name           = "${var.prefix}-${var.environment}-backend-5xx"
   log_group_name = aws_cloudwatch_log_group.dojo_log_group["backend"].name
 
-    # Matches any backend log where the HTTP response status is 5XX.
+  # Matches any backend log where the HTTP response status is 5XX.
   pattern = "{ $.status >= 500 }"
 
   metric_transformation {

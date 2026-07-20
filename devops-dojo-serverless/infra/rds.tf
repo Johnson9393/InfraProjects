@@ -28,19 +28,19 @@ resource "aws_db_subnet_group" "dojo_rds_subnet_group" {
 resource "aws_db_instance" "dojo_rds_instance" {
   count = var.environment != "prod" ? 1 : 0
 
-  identifier              = "${var.prefix}-${var.environment}-rds-instance"
-  engine                  = var.rds_instance_config.engine
-  instance_class          = var.rds_instance_config.instance_class
-  username                = var.rds_instance_config.username
-  password                = random_password.rds_password.result
-  db_name                 = var.db_name
-  db_subnet_group_name    = aws_db_subnet_group.dojo_rds_subnet_group.name
-  vpc_security_group_ids  = [aws_security_group.dojo_rds_sg.id]
-  publicly_accessible     = var.rds_instance_config.publicly_accessible
-  backup_retention_period = var.rds_instance_config.backup_retention_period
-  skip_final_snapshot     = var.rds_instance_config.skip_final_snapshot
-  allocated_storage       = var.rds_instance_config.allocated_storage
-  apply_immediately       = var.rds_instance_config.apply_immediately
+  identifier                   = "${var.prefix}-${var.environment}-rds-instance"
+  engine                       = var.rds_instance_config.engine
+  instance_class               = var.rds_instance_config.instance_class
+  username                     = var.rds_instance_config.username
+  password                     = random_password.rds_password.result
+  db_name                      = var.db_name
+  db_subnet_group_name         = aws_db_subnet_group.dojo_rds_subnet_group.name
+  vpc_security_group_ids       = [aws_security_group.dojo_rds_sg.id]
+  publicly_accessible          = var.rds_instance_config.publicly_accessible
+  backup_retention_period      = var.rds_instance_config.backup_retention_period
+  skip_final_snapshot          = var.rds_instance_config.skip_final_snapshot
+  allocated_storage            = var.rds_instance_config.allocated_storage
+  apply_immediately            = var.rds_instance_config.apply_immediately
   performance_insights_enabled = true
 
   tags = {

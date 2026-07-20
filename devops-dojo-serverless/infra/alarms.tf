@@ -26,12 +26,12 @@ resource "aws_cloudwatch_metric_alarm" "backend_cpu_high" {
     ClusterName = aws_ecs_cluster.dojo_cluster.name
     ServiceName = aws_ecs_service.dojo_service["backend"].name
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -57,12 +57,12 @@ resource "aws_cloudwatch_metric_alarm" "backend_memory_high" {
     ClusterName = aws_ecs_cluster.dojo_cluster.name
     ServiceName = aws_ecs_service.dojo_service["backend"].name
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -88,12 +88,12 @@ resource "aws_cloudwatch_metric_alarm" "frontend_cpu_high" {
     ClusterName = aws_ecs_cluster.dojo_cluster.name
     ServiceName = aws_ecs_service.dojo_service["frontend"].name
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -119,12 +119,12 @@ resource "aws_cloudwatch_metric_alarm" "frontend_memory_high" {
     ClusterName = aws_ecs_cluster.dojo_cluster.name
     ServiceName = aws_ecs_service.dojo_service["frontend"].name
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -147,15 +147,15 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time_high" {
   treat_missing_data = "notBreaching"
 
   dimensions = {
-    LoadBalancer  = aws_alb.dojo_alb.arn_suffix
-    TargetGroup = aws_alb_target_group.dojo_target_group.arn_suffix
+    LoadBalancer = aws_alb.dojo_alb.arn_suffix
+    TargetGroup  = aws_alb_target_group.dojo_target_group.arn_suffix
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -178,15 +178,15 @@ resource "aws_cloudwatch_metric_alarm" "alb_target_4XX" {
   treat_missing_data = "notBreaching"
 
   dimensions = {
-    LoadBalancer  = aws_alb.dojo_alb.arn_suffix
-    TargetGroup = aws_alb_target_group.dojo_target_group.arn_suffix
+    LoadBalancer = aws_alb.dojo_alb.arn_suffix
+    TargetGroup  = aws_alb_target_group.dojo_target_group.arn_suffix
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -209,15 +209,15 @@ resource "aws_cloudwatch_metric_alarm" "alb_target_5XX" {
   treat_missing_data = "notBreaching"
 
   dimensions = {
-    LoadBalancer  = aws_alb.dojo_alb.arn_suffix
-    TargetGroup = aws_alb_target_group.dojo_target_group.arn_suffix
+    LoadBalancer = aws_alb.dojo_alb.arn_suffix
+    TargetGroup  = aws_alb_target_group.dojo_target_group.arn_suffix
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
@@ -240,15 +240,15 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts_count" {
   treat_missing_data = "notBreaching"
 
   dimensions = {
-    LoadBalancer  = aws_alb.dojo_alb.arn_suffix
-    TargetGroup = aws_alb_target_group.dojo_target_group.arn_suffix
+    LoadBalancer = aws_alb.dojo_alb.arn_suffix
+    TargetGroup  = aws_alb_target_group.dojo_target_group.arn_suffix
   }
-    # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
+  # triggers emails when cpu is above 80% after 2 consecutive 60-second periods
   alarm_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
 
-    # It will trigger email when cpu back to normal 
+  # It will trigger email when cpu back to normal 
   ok_actions = [
     aws_sns_topic.cloudwatch_alerts.arn
   ]
