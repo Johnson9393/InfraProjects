@@ -135,3 +135,8 @@ variable "alarm_email" {
   description = "Email address to receive CloudWatch alarm notifications."
   type        = string
 }
+
+variable "bastion_instance_type" {
+  description = "EC2 instance type for Bastion Host"
+  type        = string
+}
