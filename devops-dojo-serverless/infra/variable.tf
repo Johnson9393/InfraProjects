@@ -134,5 +134,4 @@ variable "aurora_instance_config" {
 variable "alarm_email" {
   description = "Email address to receive CloudWatch alarm notifications."
   type        = string
-  default = "johnson.johnny0903@gmail.com"
 }

@@ -26,3 +26,11 @@ output "frontend_sg_id" {
 output "rds_sg_id" {
   value = aws_security_group.dojo_rds_sg.id
 }
+
+output "bastion_instance_id" {
+  value = module.bastion.instance_id
+}
+
+output "bastion_public_ip" {
+  value = module.bastion.public_ip
+}

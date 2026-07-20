@@ -8,7 +8,7 @@ resource "aws_security_group" "dojo_rds_sg" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.backend_sg.id]
+    security_groups = [aws_security_group.backend_sg.id, aws_security_group.bastion_sg.id]
   }
 
   egress {
@@ -103,5 +103,27 @@ resource "aws_security_group" "dojo_alb_sg" {
 
   tags = {
     Name = "${var.prefix}-${var.environment}-alb-sg"
+  }
+}
+
+
+resource "aws_security_group" "bastion_sg" {
+
+  name        = "${var.prefix}-${var.environment}-bastion-sg"
+  description = "Security Group for Bastion Host"
+
+  vpc_id = module.network.vpc_id
+
+  egress {
+
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.prefix}-${var.environment}-bastion-sg"
   }
 }

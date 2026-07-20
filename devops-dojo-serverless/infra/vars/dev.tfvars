@@ -1,6 +1,7 @@
 environment = "dev"
 db_name = "dojodb"
 alarm_email = "johnson.johnny0903@gmail.com"
+bastion_instance_type = "t3.micro"
 
 public_subnets = [
   {
