@@ -41,6 +41,9 @@ function Navbar() {
             <Link to="/manage-questions" className="hover:text-gray-300 text-sm">
               Manage
             </Link>
+            <Link to="/upload-questions" className="hover:text-gray-300 text-sm">
+              Transactions
+            </Link>
 
             {editing ? (
               <div className="flex items-center gap-2">

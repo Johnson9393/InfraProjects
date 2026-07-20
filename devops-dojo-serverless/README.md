@@ -90,9 +90,9 @@ The primary objectives of this project are:
 
 ---
 
-# Current Scope
+# Scope
 
-The first phase of this project focuses on:
+The sope of this project focuses on:
 
 * Understanding the existing upload workflow.
 * Modifying the application to accept only CSV uploads.
@@ -121,3 +121,6 @@ Additional enhancements will be documented as each implementation phase is compl
 * CloudWatch
 
 ---
+
+
+

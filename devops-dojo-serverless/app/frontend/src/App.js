@@ -8,6 +8,7 @@ import QuestionManager from './components/QuestionManager';
 import WikiList from './components/wiki/WikiList';
 import WikiPage from './components/wiki/WikiPage';
 import WikiEditor from './components/wiki/WikiEditor';
+import UploadQuestions from "./components/UploadQuestions";
 
 function App() {
   return (
@@ -19,6 +20,8 @@ function App() {
           <Route path="/quiz/:topic" element={<Quiz />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/manage-questions" element={<QuestionManager />} />
+          <Route path="/upload-questions" element={<UploadQuestions />} />
+
           
           {/* Wiki Routes */}
           <Route path="/wiki" element={<WikiList />} />

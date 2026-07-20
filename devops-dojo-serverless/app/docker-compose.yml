@@ -19,6 +19,7 @@ services:
     build: ./backend
     volumes:
       - ./backend:/app
+      - ~/.aws:/root/.aws
     environment:
       - FLASK_APP=run.py
       - FLASK_DEBUG=1
@@ -37,7 +38,7 @@ services:
         condition: service_healthy
     command: bash -c "sleep 10 && ./migrate.sh && gunicorn --bind 0.0.0.0:8000 run:app"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

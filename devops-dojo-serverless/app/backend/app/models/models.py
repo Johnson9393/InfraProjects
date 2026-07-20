@@ -1,6 +1,7 @@
 import random
 import uuid
 from datetime import datetime, timedelta
+from datetime import datetime, UTC
 
 from . import db
 
@@ -202,3 +203,71 @@ class WikiPage(db.Model):
             "author": self.author,
             "is_published": self.is_published,
         }
+
+#Uploading Transaction model to store the details of the uploaded file and its processing status. This model will help in tracking the progress of the file processing and any validation errors that may occur during the process.
+class UploadTransaction(db.Model):
+    __tablename__ = "upload_transactions"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    file_name = db.Column(db.String(255), nullable=False)
+
+    bucket_name = db.Column(db.String(255), nullable=False)
+
+    object_key = db.Column(db.String(500), nullable=False)
+
+    status = db.Column(db.String(20), nullable=False, default="UPLOADED")
+
+    total_records = db.Column(db.Integer, default=0)
+
+    success_records = db.Column(db.Integer, default=0)
+
+    failed_records = db.Column(db.Integer, default=0)
+
+    validation_error = db.Column(db.Text)
+
+    uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
+
+    processed_at = db.Column(db.DateTime)
+
+    # This relationship establishes a one-to-many relationship between the UploadTransaction model and the UploadedQuestion model. It allows us to access all the questions associated with a specific upload transaction. The backref parameter creates a reverse relationship, allowing us to access the parent transaction from an UploadedQuestion instance. The lazy parameter specifies how the related objects should be loaded, and cascade ensures that when an UploadTransaction is deleted, all associated UploadedQuestion instances are also deleted.
+
+    # "relationship() is an ORM feature that lets related Python objects navigate to each other without writing manual SQL queries. The database relationship is enforced by the foreign key, while the ORM relationship provides convenient object access. SQLAlchemy still performs the required SQL queries or joins behind the scenes; it simply hides that complexity from the application code."
+    uploaded_questions = db.relationship(
+    "UploadedQuestion",
+    backref="transaction",
+    lazy=True,
+    cascade="all, delete-orphan"
+)
+
+
+# This model represents the individual questions that are uploaded as part of a transaction. Each question is linked to a specific upload transaction through the transaction_id foreign key. This allows for tracking which questions belong to which upload transaction and their associated topic.
+class UploadedQuestion(db.Model):
+    __tablename__ = "uploaded_questions"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    transaction_id = db.Column(
+        db.Integer,
+        db.ForeignKey("upload_transactions.id"),
+        nullable=False
+    )
+
+    topic_slug = db.Column(db.String(100), nullable=False)
+
+    question_text = db.Column(db.Text, nullable=False)
+
+    option1 = db.Column(db.Text, nullable=False)
+
+    option2 = db.Column(db.Text, nullable=False)
+
+    option3 = db.Column(db.Text, nullable=False)
+
+    option4 = db.Column(db.Text, nullable=False)
+
+    correct_answer = db.Column(db.Integer, nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(UTC)
+    )

@@ -1,4 +1,9 @@
 from flask import current_app, jsonify, request
+import boto3
+
+s3_client = boto3.client("s3")
+
+BUCKET_NAME = "devopsdojo-transaction-files-dev"
 
 from app.cloudwatch_metrics import emit_quiz_submission
 from app.models import db
@@ -268,3 +273,29 @@ def bulk_upload_questions():
             "errors": errors if errors else None,
         }
     )
+
+
+# Creating this api to upload csv files for transactional data
+@quiz_bp.route("/questions/upload-csv", methods=["POST"])
+def upload_csv():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "Please select a CSV file"}), 400
+
+    if not file.filename.lower().endswith(".csv"):
+        return jsonify({"error": "Only CSV files are allowed"}), 400
+
+    s3_client.upload_fileobj(
+    file,
+    BUCKET_NAME,
+    f"inbound/{file.filename}"
+)
+
+    return jsonify({
+        "message": "CSV uploaded successfully to S3",
+        "filename": file.filename
+    }), 200
