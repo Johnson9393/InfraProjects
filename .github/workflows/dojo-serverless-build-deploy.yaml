@@ -40,10 +40,10 @@ jobs:
       matrix:
         services:
           - name: backend
-            path: terraform-ecs-3tier-deployment/app/backend
+            path: devops-dojo-serverless/app/backend
             ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-backend
           - name: frontend
-            path: terraform-ecs-3tier-deployment/app/frontend
+            path: devops-dojo-serverless/app/frontend
             ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/devopsdojo-${{ inputs.environment }}-frontend
 
     steps:
