@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "devopsdojo-transaction-files-dev"
+        },
+        "object": {
+          "key": "inbound/docker_questions.csv"
+        }
+      }
+    }
+  ]
+}
