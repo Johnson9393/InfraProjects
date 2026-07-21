@@ -2,17 +2,17 @@
 # Amazon Linux 2023 AMI
 #############################################
 
-data "aws_ami" "bastion_ami" {
+# data "aws_ami" "bastion_ami" {
 
-  most_recent = true
+#   most_recent = true
 
-  owners = ["amazon"]
+#   owners = ["amazon"]
 
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-}
+#   filter {
+#     name   = "name"
+#     values = ["al2023-ami-*-x86_64"]
+#   }
+# }
 
 #############################################
 # Bastion IAM Role
@@ -69,7 +69,7 @@ module "bastion" {
 
   name = "${var.prefix}-${var.environment}-bastion"
 
-  ami_id = data.aws_ami.bastion_ami.id
+  ami_id = "ami-0b826bb6d96d2afe4" # Amazon Linux 2023 AMI
 
   associate_public_ip_address = true
 
