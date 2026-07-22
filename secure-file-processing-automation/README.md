@@ -82,8 +82,6 @@ This project combines several technologies to build a complete cloud-native secu
 
 ## Why This Project?
 
-Most DevOps projects focus on provisioning infrastructure using Terraform or deploying applications using Kubernetes. While those are important skills, modern DevOps engineers are also expected to build automation that integrates multiple cloud services together.
-
 This project demonstrates how Python can be used to automate AWS operations, process cloud events, execute Linux commands, and build intelligent workflows instead of only managing infrastructure.
 
 By combining Python with AWS services, this project represents a real-world enterprise use case where cloud infrastructure, automation, and security work together.
@@ -121,8 +119,6 @@ By combining Python with AWS services, this project represents a real-world ente
 ---
 
 ## Learning Outcomes
-
-By completing this project, I will gain practical experience with:
 
 - Building event-driven cloud architectures
 - Python automation using Boto3
