@@ -58,9 +58,9 @@ def create_upload_transaction(connection, bucket, key):
                 key,
                 "PROCESSING"
             )
-        )
+        )  #This line executes the SQL query using the cursor object. The query is passed as a string, and the values for the placeholders (%s) are provided as a tuple. The execute method sends the query to the database for execution.
 
-        transaction_id = cursor.fetchone()[0]
+        transaction_id = cursor.fetchone()[0] #This line fetches the first row of the result set returned by the query and retrieves the first column value (the transaction ID) from that row. The transaction ID is then stored in the transaction_id variable.
 
     return transaction_id
 
