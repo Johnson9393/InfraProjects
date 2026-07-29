@@ -5,13 +5,22 @@ Main application workflow for the malware scanner.
 import json
 from urllib.parse import unquote_plus
 
-from helper import get_queue_url
+from helper import (
+    get_queue_url,
+    get_clean_bucket,
+    get_quarantine_bucket,
+    get_topic_arn
+)
 from aws_helper import (
     create_sqs_client,
     create_s3_client,
     receive_messages,
     download_file,
     delete_message,
+    tag_s3_object,
+    move_s3_object,
+    create_sns_client,
+    publish_sns_notification
 )
 from clamav_helper import scan_file
 
@@ -25,8 +34,12 @@ def main():
 
     sqs = create_sqs_client()
     s3 = create_s3_client()
+    sns = create_sns_client()
 
     queue_url = get_queue_url()
+    clean_bucket = get_clean_bucket()
+    quarantine_bucket = get_quarantine_bucket()
+    topic_arn = get_topic_arn()
 
     print("AWS clients created successfully.")
 
@@ -71,7 +84,60 @@ def main():
         )
 
         try:
-            scan_file(local_file_path)
+            scan_result = scan_file(local_file_path)
+
+            status = list(scan_result.values())[0][0]
+
+            if status == "OK":
+                scan_status = "clean"
+                destination_bucket = clean_bucket
+                print(f"File '{object_key}' is clean.")
+            else:
+                scan_status = "infected"
+                destination_bucket = quarantine_bucket
+                print(f"File '{object_key}' is infected.")
+
+            tag_s3_object(
+                s3,
+                bucket_name,
+                object_key,
+                scan_status
+            )
+
+            move_s3_object(
+                s3,
+                bucket_name,
+                destination_bucket,
+                object_key
+            )
+
+            if scan_status == "clean":
+                subject = "File Scan Result"
+
+                message = (
+                    f"File Name : {object_key}\n"
+                    f"Status    : CLEAN\n"
+                    f"Bucket    : {destination_bucket}"
+                )
+
+            else:
+                threat_name = list(scan_result.values())[0][1]
+
+                subject = "Malware Detected"
+
+                message = (
+                    f"File Name : {object_key}\n"
+                    f"Status    : INFECTED\n"
+                    f"Threat    : {threat_name}\n"
+                    f"Bucket    : {destination_bucket}"
+                )
+            
+            publish_sns_notification(
+                sns,
+                topic_arn,
+                subject,
+                message
+            )
 
             delete_message(
                 sqs=sqs,

@@ -84,3 +84,95 @@ def download_file(s3, bucket_name, object_key):
     print(f"File downloaded successfully: {local_file_path}")
 
     return local_file_path
+
+
+# ====================================================================
+# Tagging S3 objects
+# ====================================================================
+
+def tag_s3_object(s3_client, bucket_name, object_key, scan_status):
+    """Adds a scan status tag to an S3 object."""
+
+    print(f"Tagging S3 object as '{scan_status}'...")
+
+    s3_client.put_object_tagging(
+        Bucket=bucket_name,
+        Key=object_key,
+        Tagging={
+            "TagSet": [
+                {
+                    "Key": "scan-status",
+                    "Value": scan_status
+                }
+            ]
+        }
+    )
+
+    print("S3 object tagged successfully.")
+
+
+# ====================================================================
+# Move S3 objects to destination buckets
+# ====================================================================
+
+def move_s3_object(s3_client, source_bucket, destination_bucket, object_key):
+    """Moves an S3 object from one bucket to another."""
+
+    print(
+        f"Moving '{object_key}' from '{source_bucket}' "
+        f"to '{destination_bucket}'..."
+    )
+
+    copy_source = {
+        "Bucket": source_bucket,
+        "Key": object_key
+    }
+
+    s3_client.copy_object(
+        Bucket=destination_bucket,
+        Key=object_key,
+        CopySource=copy_source
+    )
+
+    print("Object copied successfully.")
+
+    s3_client.delete_object(
+        Bucket=source_bucket,
+        Key=object_key
+    )
+
+    print("Original object deleted successfully.")
+
+
+# ====================================================================
+# Helper functions for SNS 
+# ====================================================================
+
+def create_sns_client():
+    """Creates an SNS client."""
+
+    print("Creating SNS client...")
+
+    return boto3.client(
+        "sns",
+        region_name=get_region()
+    )
+
+
+def publish_sns_notification(
+    sns_client,
+    topic_arn,
+    subject,
+    message
+):
+    """Publishes a notification to an SNS topic."""
+
+    print("Publishing SNS notification...")
+
+    sns_client.publish(
+        TopicArn=topic_arn,
+        Subject=subject,
+        Message=message
+    )
+
+    print("SNS notification published successfully.")
