@@ -10,6 +10,54 @@ This project automates the entire scanning process by building an event-driven a
 
 ---
 
+## HighLevel - Workflow
+
+User uploads a file to Amazon S3
+            │
+            ▼
+Amazon S3 generates an ObjectCreated event
+            │
+            ▼
+S3 sends the event notification to Amazon SQS
+            │
+            ▼
+Python worker (app.py) is continuously polling SQS
+            │
+            ▼
+Receives the SQS message
+            │
+            ▼
+Extracts:
+- Bucket Name
+- Object Key
+            │
+            ▼
+Downloads the file from Amazon S3
+            │
+            ▼
+Connects to the already running ClamAV daemon (clamd)
+            │
+            ▼
+clamd scans the downloaded file using the latest virus signature database
+(main.cvd, daily.cvd and bytecode.cvd)
+            │
+            ▼
+Returns either:
+- OK (clean file)
+or
+- FOUND (malware detected)
+            │
+            ▼
+Python application receives the scan result
+            │
+            ▼
+Deletes the processed SQS message
+            │
+            ▼
+Returns to polling SQS and waits for the next upload
+
+---
+
 ## Project Objective
 
 The main objective of this project is to build a secure, scalable, and automated malware scanning pipeline that:
