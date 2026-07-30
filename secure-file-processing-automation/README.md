@@ -188,3 +188,4 @@ By combining Python with AWS services, this project represents a real-world ente
 The goal of this project is not only to build an automated malware scanning system but also to understand how multiple AWS services can be integrated using Python to solve a real-world business problem.
 
 By the end of this project, I will have built a production-style security automation pipeline that demonstrates cloud architecture, infrastructure automation, containerization, and Python development working together as a complete solution.
+
