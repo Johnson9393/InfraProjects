@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agileops-portal
+  labels:
+    app: agileops-portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agileops-portal
+  template:
+    metadata:
+      labels:
+        app: agileops-portal
+    spec:
+      imagePullSecrets:
+        - name: ecr-secret
+      containers:
+        - name: agileops-portal
+          image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/file-scanner:1.0
+          ports:
+            - containerPort: 8000
+          env:
+          - name: DB_LINK
+            #value: "postgresql://pgadmin:ChangeMe123!@tiny-pg.c6rsmk8eg17k.us-east-1.rds.amazonaws.com:5432/mydb"
+            valueFrom:
+              secretKeyRef:
+                name: db-secret
+                key: DB_LINK
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: agileops-portal-service
+spec:
+  selector:
+    app: agileops-portal
+  ports:
+    - protocol: TCP
+      port: 8000 
+      targetPort: 8000
+

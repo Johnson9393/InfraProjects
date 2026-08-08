@@ -1,0 +1,7 @@
+# Its a kind-config.yaml file for creating a local Kubernetes cluster using kind (Kubernetes in Docker). This configuration defines a single control-plane node and two worker nodes. The control-plane node is responsible for managing the cluster, while the worker nodes run the application workloads.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
