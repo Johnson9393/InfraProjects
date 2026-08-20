@@ -1,0 +1,21 @@
+name: dojo-eks-build-deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform-eks-3tier/dojo-app/src/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Select the environment to deploy to"
+        required: true
+        options:
+          - dev
+          - prod
+
+jobs: 
+  
+        
