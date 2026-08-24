@@ -66,7 +66,9 @@ locals {
     )
   ]
 
-  #List of map will not work to iterate the items. Hence creating map to iterate thru services. Map or set works to iterate in terraform
+  # List of objects can be iterated using count, but for_each requires a map or set.
+  # Convert the service list into a map using service.name as the key,
+  # so each service can be created with a stable key.
   ecs_services_map = { for service in local.ecs_services : service.name => service }
 
   rds_connection_string = var.environment == "prod" ? "postgresql://${aws_rds_cluster.dojo_rds_cluster[0].master_username}:${random_password.rds_password.result}@${aws_rds_cluster.dojo_rds_cluster[0].endpoint}:${aws_rds_cluster.dojo_rds_cluster[0].port}/${aws_rds_cluster.dojo_rds_cluster[0].database_name}" : "postgresql://${aws_db_instance.dojo_rds_instance[0].username}:${random_password.rds_password.result}@${aws_db_instance.dojo_rds_instance[0].address}:${aws_db_instance.dojo_rds_instance[0].port}/${aws_db_instance.dojo_rds_instance[0].db_name}"
