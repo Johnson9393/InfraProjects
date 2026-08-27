@@ -19,7 +19,7 @@ terraform {
 terraform {
     backend "s3" {
         bucket         = "sp-state-bucket"
-        key            = "eks/oidc/dev/terraform.tfstate"
+        key            = "oidc/dev/terraform.tfstate"
         region         = "us-east-1"
         use_lockfile   = true
         encrypt        = true
