@@ -75,7 +75,7 @@ resource "aws_db_instance" "dojo_rds" {
     storage_encrypted       = true
     backup_retention_period = 7
     storage_type            = "gp3"
-    kms_key_id              = aws_kms_key.rds_kms.id
+    kms_key_id              = aws_kms_key.rds_kms.arn
     auto_minor_version_upgrade = true
     deletion_protection      = false
     copy_tags_to_snapshot     = true

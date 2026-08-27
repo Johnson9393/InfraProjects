@@ -8,7 +8,8 @@ resource "aws_security_group" "dojo_rds_sg" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = ["0.0.0.0/0"] # later add eks node sg
+    cidr_blocks     = ["0.0.0.0/0"]
+    //security_groups = ["0.0.0.0/0"] # later add eks node sg
   }
 
   egress {
