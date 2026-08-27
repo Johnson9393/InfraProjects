@@ -74,6 +74,11 @@ resource "aws_iam_policy" "github_ecr_policy" {
             {
                 Effect = "Allow"
                 Action = [
+                    # Required to read existing images/cache
+                    "ecr:BatchGetImage",
+                    "ecr:GetDownloadUrlForLayer",
+
+                    #Required to push new images
                     "ecr:BatchCheckLayerAvailability",
                     "ecr:PutImage",
                     "ecr:InitiateLayerUpload",
