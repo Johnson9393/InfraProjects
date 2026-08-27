@@ -33,15 +33,15 @@ jobs:
         services:
           - name: frontend
             path: terraform-eks-3tier/dojo-app/src/frontend
-            ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-frontend
+            ecr_repo: dojo-dev-frontend
 
           - name: backend
             path: terraform-eks-3tier/dojo-app/src/backend
-            ecr_repo: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-backend
+            ecr_repo: dojo-dev-backend
     
     steps:
       - name: checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -56,11 +56,11 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{env.AWS_REGION}} | \
           docker login --username AWS --password-stdin \
-          ${aws sts get-caller-identity --query Account --output text}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
+          $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
       
       - name: Build and Push ${{ matrix.services.name }}
         run: |
-          ECR_REGISTRY=${aws sts get-caller-identity --query Account --output text}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
+          ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
 
           docker buildx build \
             --platform linux/amd64 \
