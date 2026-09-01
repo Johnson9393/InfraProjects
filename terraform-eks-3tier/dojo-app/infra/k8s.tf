@@ -36,7 +36,7 @@ resource "kubernetes_config_map" "backend_config" {
     DB_HOST         = aws_db_instance.dojo_rds.address
     DB_PORT         = aws_db_instance.dojo_rds.port
     DB_NAME         = aws_db_instance.dojo_rds.db_name
-    ALLOWED_ORIGINS = "http://${kubernetes_service.frontend_service.spec[0].cluster_ip}:${kubernetes_service.frontend_service.spec[0].port[0].port}}"
+    ALLOWED_ORIGINS = "http://${kubernetes_service.frontend_service.spec[0].cluster_ip}:${kubernetes_service.frontend_service.spec[0].port[0].port}"
   }
 }
 

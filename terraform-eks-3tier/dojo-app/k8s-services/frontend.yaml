@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend-deployment
+  namespace: dojo
   labels:
     app: frontend
 
@@ -20,10 +21,9 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ""
-
+          image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-frontend:95c00f45aa306935ea31337f5a46efb6cc2b1f6d
           ports:
-            - containerPort: 3000
+          - containerPort: 3000
 
           env:
             # Frontend application configuration

@@ -1,25 +1,24 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: backend-deployment
+  name: backend-migration
   namespace: dojo
   labels:
     app: backend
 spec: 
-  replicas: 2
-  selector:
-    matchLabels:
-      app: backend
+  backoffLimit: 3
+
   template:
     metadata:
       labels:
         app: backend
     spec:
+      restartPolicy: Never
+      
       containers:
       - name: backend
         image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-backend:95c00f45aa306935ea31337f5a46efb6cc2b1f6d
-        ports:
-        - containerPort: 8000
+        command: ["/bin/sh", "-c", "./migrate.sh"]
 
         env:
           # Non-sensitive configuration container variables
@@ -71,33 +70,5 @@ spec:
               secretKeyRef:
                 name: backend-secret
                 key: SECRET_KEY
-
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 3
-        
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 20
-          periodSeconds: 15
-          timeoutSeconds: 3
-          failureThreshold: 3
-
-
 
 

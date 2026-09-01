@@ -90,7 +90,7 @@ resource "aws_db_instance" "dojo_rds" {
 resource "aws_secretsmanager_secret" "rds_secret" {
   name                      = "${var.project}-${var.env}-rds-secret"
   description               = "RDS credentials for ${var.project}-${var.env}-rds"
-  recovery_window_in_days   = 7
+  recovery_window_in_days   = 0
 
   lifecycle {
     create_before_destroy = true
@@ -99,7 +99,7 @@ resource "aws_secretsmanager_secret" "rds_secret" {
 
 resource "aws_secretsmanager_secret_version" "rds_secret_version" {
   secret_id     = aws_secretsmanager_secret.rds_secret.id
-  secret_string = "postgres://${aws_db_instance.dojo_rds.username}:${random_password.rds_password.result}@${aws_db_instance.dojo_rds.address}:${aws_db_instance.dojo_rds.port}/${aws_db_instance.dojo_rds.db_name}"
+  secret_string = "postgresql://${aws_db_instance.dojo_rds.username}:${random_password.rds_password.result}@${aws_db_instance.dojo_rds.address}:${aws_db_instance.dojo_rds.port}/${aws_db_instance.dojo_rds.db_name}"
 
     lifecycle {
         create_before_destroy = true
