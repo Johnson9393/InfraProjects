@@ -16,6 +16,18 @@ variable "vpc_name" {
     default = "dojo-vpc"
 }
 
+variable "domain_name" {
+  type    = string
+  default = "infralabx.space"
+}
+
+
+variable "sub_domain" {
+  type    = string
+  default = "dojo"
+}
+
+
 variable "rds_subnets" {
   type = list(object({
     cidr              = string
