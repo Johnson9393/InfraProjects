@@ -58,4 +58,10 @@ variable "private_subnet_cidrs" {
     default     = ["10.0.3.0/24", "10.0.4.0/24"]
 }
 
+variable "admin_role_arn" {
+  description = "IAM Identity Center role that gets EKS administrator access"
+  type        = string
+  default     = "arn:aws:iam::023192525105:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_5c1cd0f4738b46a6"
+}
+
 
