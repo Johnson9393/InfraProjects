@@ -13,6 +13,8 @@ locals {
     "repo:${r.user}/${r.repo}:ref:refs/heads/${r.branch}"
   ])
 
+  backend_ecr_arn = "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.project}-${var.env}-backend"
+  frontend_ecr_arn = "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.project}-${var.env}-frontend"
 }
 
 # Creates GitHub's OIDC Provider in AWS IAM.
@@ -31,8 +33,8 @@ resource "aws_iam_openid_connect_provider" "github_oidc_provider" {
 # This role creates the trusted AWS identity that github actions can assukme using OIDC token.
 # On conditions where trusted repo/branch and is intended for aws sts. 
 # why aws sts cuz it is a service that allows you to request temporary, limited-privilege credentials for AWS IAM users or for users that you authenticate (federated users).
-resource "aws_iam_role" "aws_oidc_role" {
-    name = "github-aws-oidc-role"
+resource "aws_iam_role" "github_terraform_role" {
+    name = "github-terraform-role"
 
     assume_role_policy = jsonencode({
         Version = "2012-10-17"
@@ -52,6 +54,54 @@ resource "aws_iam_role" "aws_oidc_role" {
             }
         ]
     })
+}
+
+
+# ---------------------------------------------------------
+# Terraform Infrastructure Permissions
+# ---------------------------------------------------------
+
+resource "aws_iam_role_policy_attachment" "github_terraform_admin" {
+
+  role = aws_iam_role.github_terraform_role.name
+
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+
+# ---------------------------------------------------------
+# GitHub ECR IAM Role
+# ---------------------------------------------------------
+
+resource "aws_iam_role" "github_ecr_role" {
+
+  name = "github-ecr-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github_oidc_provider.arn
+        }
+
+        Action = "sts:AssumeRoleWithWebIdentity"
+
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = local.github_oidc_subjects
+          }
+        }
+      }
+    ]
+  })
 }
 
 # This policy allows the role to push images to ECR repositories.
@@ -87,8 +137,8 @@ resource "aws_iam_policy" "github_ecr_policy" {
                 ]
 
                 Resource = [
-                    data.aws_ecr_repository.backend.arn,
-                    data.aws_ecr_repository.frontend.arn
+                    local.backend_ecr_arn,
+                    local.frontend_ecr_arn
                 ]
             }
         ]
@@ -97,12 +147,25 @@ resource "aws_iam_policy" "github_ecr_policy" {
 
 # Attach the policy to the iam role to allow to push images
 resource "aws_iam_role_policy_attachment" "attach_ecr_policy" {
-    role = aws_iam_role.aws_oidc_role.name
+    role = aws_iam_role.github_ecr_role.name
     policy_arn = aws_iam_policy.github_ecr_policy.arn
 }
 
 
-# output of role arn
-output "aws_iam_role_arn" {
-    value = aws_iam_role.aws_oidc_role.arn
-} 
+# ---------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------
+
+output "github_terraform_role_arn" {
+
+  description = "IAM role ARN used by GitHub Actions for Terraform"
+
+  value = aws_iam_role.github_terraform_role.arn
+}
+
+output "github_ecr_role_arn" {
+
+  description = "IAM role ARN used by GitHub Actions for ECR image push"
+
+  value = aws_iam_role.github_ecr_role.arn
+}
