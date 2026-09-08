@@ -1110,6 +1110,319 @@ Those are the TLS questions that are especially important for a Cloud/DevOps eng
 
 ---
 
+## TLS 1.2 vs TLS 1.3 — Cryptographic Mechanisms
+
+### Older / Legacy Mechanisms in TLS 1.2
+
+TLS 1.2 allowed several older cryptographic choices, depending on configuration:
+
+* **RSA key exchange** — the client could encrypt key material with the server's RSA public key. This does **not provide forward secrecy**.
+* **Static Diffie-Hellman** — also did not provide forward secrecy.
+* **CBC + HMAC** — encryption and integrity were handled as separate mechanisms (`AES-CBC` + `HMAC`), creating more complexity and a larger attack surface.
+* **Older algorithms** such as 3DES, RC4, and SHA-1 were possible in older TLS 1.2 configurations.
+
+The important point: **TLS 1.2 itself was not necessarily insecure**. It could be configured with strong algorithms, but the protocol allowed many legacy choices.
+
+### Modernized Mechanisms in TLS 1.3
+
+TLS 1.3 removed the legacy choices and standardized a much smaller, modern set:
+
+* **ECDHE** for key exchange → provides **forward secrecy**.
+* **AES-GCM or ChaCha20-Poly1305** → modern **AEAD** encryption, providing confidentiality + integrity together.
+* **HKDF** → modern key-derivation mechanism with better key separation.
+* **RSA key exchange removed** → RSA can still be used for authentication/signatures, but not to establish the encryption keys.
+* **Older algorithms such as RC4, 3DES and CBC cipher suites removed.**
+
+### Does This Reduce Latency?
+
+**Mostly, these changes are for better security and simpler protocol design — not directly for encryption speed.**
+
+The **latency improvement in TLS 1.3 mainly comes from the redesigned handshake**, not from AES-GCM/ChaCha20 being magically faster.
+
+TLS 1.3 also puts key-exchange information (`key_share`) in the initial `ClientHello`, allowing the client and server to establish key material sooner.
+
+So remember:
+
+**Modern cryptographic mechanisms → primarily better security + simpler protocol**
+
+**TLS 1.3 redesigned handshake → fewer round trips → lower connection-establishment latency**
+
+**0-RTT resumption → can reduce latency even further for eligible resumed connections.**
+
+---
+
+# TLS Session Keys — Shared Secret to Encrypted Data
+
+## 1. Where Do Session Keys Come From?
+
+After the TLS key exchange, both client and server have independently calculated the **same shared secret**.
+
+The shared secret itself is **not used directly to encrypt all HTTP data**.
+
+Instead:
+
+`Key Exchange → Shared Secret → Key Derivation → Traffic/Session Keys → Encrypted HTTP`
+
+TLS uses the shared secret as input to a **key-derivation function (KDF)** to generate the symmetric keys used for the actual connection.
+
+For example:
+
+`Shared Secret`
+→ `TLS key derivation`
+→ `Client Write Key`
+→ `Server Write Key`
+→ `Traffic Protection`
+
+The exact number and structure of keys depends on the TLS version and handshake state.
+
+---
+
+## 2. What Are Session/Traffic Keys?
+
+These are **symmetric keys created specifically for a TLS connection**.
+
+They are used to protect the actual application data:
+
+`HTTP Request`
+→ encrypt with TLS traffic key
+→ encrypted TLS record
+→ network
+→ decrypt with corresponding traffic key
+→ `HTTP Request`
+
+The keys are:
+
+* Symmetric
+* Generated locally by both sides
+* Derived from handshake secrets
+* Used for the current TLS connection
+* Not sent across the network as plaintext
+
+The server and client therefore do **not** need to transmit the final encryption key to each other.
+
+---
+
+## 3. Are Session Keys "Ephemeral"?
+
+Usually, when people say **ephemeral keys**, they are referring specifically to the temporary private keys used during an ephemeral Diffie-Hellman exchange, such as **ECDHE**.
+
+Example:
+
+`Client ephemeral private key`
++
+`Server ephemeral public key`
+→ shared secret
+
+and:
+
+`Server ephemeral private key`
++
+`Client ephemeral public key`
+→ same shared secret
+
+Then:
+
+`Shared Secret`
+→ TLS key derivation
+→ `Traffic Keys`
+
+So there are two related but different things:
+
+**Ephemeral key-exchange keys**
+
+Temporary private/public key pair used to establish the shared secret.
+
+**Traffic/session keys**
+
+Symmetric keys derived from the resulting secret and used to encrypt the actual TLS data.
+
+Do not treat these as the same key.
+
+---
+
+# 4. Long-Term Private Key vs Ephemeral Key
+
+This is the important distinction.
+
+### Long-Term Private Key
+
+The server's certificate is associated with a **long-term private key**.
+
+Example:
+
+`Server Certificate`
+→ contains server's public key
+
+`Server`
+→ securely stores corresponding private key
+
+This key can remain associated with the server's identity for a long period.
+
+Its main purpose in modern TLS is **authentication**:
+
+`Server private key`
+→ creates digital signature
+
+`Client`
+→ uses certificate public key
+→ verifies signature
+
+This proves that the server possesses the private key corresponding to the certificate.
+
+It is **not normally used to encrypt all HTTPS application data**.
+
+---
+
+### Ephemeral Private Key
+
+With ECDHE, the server generates a temporary private key for the handshake.
+
+Example:
+
+`Server starts TLS connection`
+
+→ generates temporary ECDHE private key
+
+→ derives temporary public key
+
+→ sends public key to client
+
+→ uses its temporary private key + client's public key
+
+→ calculates shared secret
+
+After the connection is finished, those temporary key-exchange secrets can be discarded.
+
+A new TLS connection can use completely new ephemeral keys.
+
+---
+
+# 5. TLS 1.2 Practical Example
+
+A modern TLS 1.2 configuration could use:
+
+`Certificate RSA Private Key`
+→ authenticate server
+
+`ECDHE`
+→ establish shared secret
+
+`Shared Secret`
+→ derive symmetric traffic keys
+
+`AES-GCM`
+→ encrypt/decrypt HTTP data
+
+So even TLS 1.2 could provide:
+
+**ECDHE + AES-GCM + forward secrecy**
+
+However, TLS 1.2 also allowed older mechanisms such as:
+
+`RSA Key Exchange`
+→ establish encryption secret
+
+In that older approach, the server's long-term RSA private key was involved in recovering the premaster secret.
+
+That means if the server's long-term private key were later compromised, previously recorded RSA-key-exchange traffic could potentially be decrypted.
+
+**No forward secrecy.**
+
+---
+
+# 6. TLS 1.3 Practical Example
+
+TLS 1.3 uses ephemeral key exchange for the normal handshake:
+
+`Client ephemeral ECDHE key`
++
+`Server ephemeral ECDHE key`
+→ `Shared Secret`
+
+Then:
+
+`Shared Secret`
+→ `HKDF`
+→ `TLS Traffic Keys`
+
+Then:
+
+`HTTP Request`
+→ `AES-GCM / ChaCha20-Poly1305`
+→ encrypted TLS records
+
+The server's certificate private key is used for **authentication/signatures**, while the ephemeral ECDHE keys establish the secret from which traffic keys are derived.
+
+---
+
+# 7. Why Ephemeral Keys Give Forward Secrecy
+
+Imagine:
+
+### Today
+
+Client and server establish a TLS connection using ECDHE.
+
+`Ephemeral keys`
+→ `Shared Secret`
+→ `Traffic Keys`
+→ encrypted data
+
+The ephemeral private keys are later discarded.
+
+### Years later
+
+Suppose an attacker obtains the server's **long-term certificate private key**.
+
+With forward secrecy, that alone is **not enough to reconstruct the old ECDHE shared secrets**, because the temporary ECDHE private keys used for those sessions are gone.
+
+Therefore:
+
+`Long-term private key compromised later`
+≠
+`Automatically decrypt old recorded TLS sessions`
+
+This is **forward secrecy**.
+
+---
+
+# 8. The Complete Picture
+
+The easiest mental model is:
+
+`Certificate`
+→ identifies/authenticates the server
+
+`Long-term private key`
+→ proves possession of that identity through a signature
+
+`Ephemeral ECDHE keys`
+→ establish shared secret
+
+`Shared Secret`
+→ input to TLS key derivation
+
+`TLS Traffic/Session Keys`
+→ symmetric keys for actual data protection
+
+`AES-GCM / ChaCha20-Poly1305`
+→ encrypts and integrity-protects HTTP data
+
+So:
+
+**Long-term private key = mainly identity/authentication**
+
+**Ephemeral ECDHE keys = temporary key exchange**
+
+**Shared secret = result of key exchange**
+
+**Traffic/session keys = actual symmetric encryption keys used for HTTPS data**
+
+And importantly:
+
+**The traffic/session keys are not the same thing as the certificate's private key.**
+---
+
 # 42. One Mental Model to Remember
 
 TLS 1.2:

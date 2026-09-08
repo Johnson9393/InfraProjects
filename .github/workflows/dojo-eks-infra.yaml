@@ -1,0 +1,113 @@
+# DOJO app  Infra creation for 3-tier app in EKS
+name: Terraform dojo eks infra
+
+on:
+  # Automatically run the workflow when Terraform-related code is pushed
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'terraform-eks-3tier/EKS/eks-core-infra/**'
+  #     - 'terraform-eks-3tier/dojo-app/infra/**'
+  #     - 'terraform-eks-3tier/github-aws-oidc/**'
+  #     - 'terraform-eks-3tier/EKS/k8s-services/**'
+
+  workflow_dispatch:
+    inputs:
+      region:
+        description: 'AWS Region'
+        required: true
+        default: 'us-east-1'
+
+      path_to_infra:
+        description: 'Path of Infra code'
+        required: true
+        type: choice
+        options:
+          - terraform-eks-3tier/EKS/eks-core-infra
+          - terraform-eks-3tier/dojo-app/infra
+          - terraform-eks-3tier/github-aws-oidc
+          - terraform-eks-3tier/EKS/k8s-services
+
+      environment:
+        description: 'Environment to deploy Infra'
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+
+env:
+  TF_VERSION: 1.15.1
+  AWS_ROLE_ARN: arn:aws:iam::023192525105:role/github-aws-oidc-role
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{env.AWS_ROLE_ARN}}
+          aws-region: ${{inputs.region}}
+      
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Initilalize Terraform
+        run: |
+          cd ${{ inputs.path_to_infra }}
+          terraform init
+      
+      - name: Plan Terraform
+        working-directory: ${{ inputs.path_to_infra }}
+        run: |
+          terraform plan
+  
+  terraform-apply:
+    needs: terraform-plan
+    runs-on : ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+    
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{env.AWS_ROLE_ARN}}
+          aws-region: ${{inputs.region}}
+      
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Initilalize Terraform
+        run: |
+          cd ${{ inputs.path_to_infra }}
+          terraform init
+
+      - name: Apply Terraform
+        working-directory: ${{ inputs.path_to_infra }}
+        run: |
+          terraform apply -auto-approve
+
+      
+      
