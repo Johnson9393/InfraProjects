@@ -26,7 +26,6 @@ on:
         options:
           - terraform-eks-3tier/EKS/eks-core-infra
           - terraform-eks-3tier/dojo-app/infra
-          - terraform-eks-3tier/github-aws-oidc
           - terraform-eks-3tier/EKS/k8s-services
 
       environment:
