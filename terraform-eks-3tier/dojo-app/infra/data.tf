@@ -16,3 +16,12 @@ data "aws_lb" "ingress" {
 
   depends_on = [kubernetes_ingress_v1.dojo_htpps_ingress]
 }
+
+
+data "aws_eks_cluster" "cluster" {
+    name = var.cluster_name
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+    name = var.cluster_name
+}
