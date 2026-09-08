@@ -4,7 +4,11 @@ locals {
   ]
 
 
-#Converted github_repo list into github_oidc_subjects list to be used in aws_iam_openid_connect_provider resource.
+# Convert github_repo into the GitHub OIDC subject format
+# expected by the IAM role trust policy.
+# Examples:
+# repo:<user>/<repo>:ref:refs/heads/<branch>
+# repo:<user>/<repo>:* for all branches
 # format that aws oidc expects is repo:<user>/<repo>:ref:refs/heads/<branch> or repo:<user>/<repo>:* for all branches. Hence we are using a for loop to convert the list into the required format.
   github_oidc_subjects = distinct([
     for r in local.github_repo :
@@ -12,6 +16,11 @@ locals {
     "repo:${r.user}/${r.repo}:*" :
     "repo:${r.user}/${r.repo}:ref:refs/heads/${r.branch}"
   ])
+
+  github_oidc_environment_subjects = [
+    "repo:Johnson9393/InfraProjects:environment:dev",
+    "repo:Johnson9393/InfraProjects:environment:prod"
+  ]
 
   backend_ecr_arn = "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.project}-${var.env}-backend"
   frontend_ecr_arn = "arn:aws:ecr:${var.region}:${var.account_id}:repository/${var.project}-${var.env}-frontend"
@@ -47,7 +56,10 @@ resource "aws_iam_role" "github_terraform_role" {
                 Action = "sts:AssumeRoleWithWebIdentity"
                 Condition = {
                     StringLike = {
-                        "token.actions.githubusercontent.com:sub" = local.github_oidc_subjects
+                        "token.actions.githubusercontent.com:sub" = concat(
+                            local.github_oidc_subjects,
+                            local.github_oidc_environment_subjects
+                        )
                         "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
                     }
                 }
