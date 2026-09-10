@@ -31,3 +31,19 @@ variable "vpc_name" {
 variable "awsloadbalancercontroller_sa" {
   default = "aws-load-balancer-controller"
 }
+
+variable "domain_name" {
+  type    = string
+  default = "infralabx.space"
+}
+
+
+variable "sub_domain" {
+  type    = string
+  default = "argo"
+}
+
+variable "alb_group_name" {
+  type    = string
+  default = "dojo-alb-group"
+}

@@ -16,3 +16,12 @@ data "aws_vpc" "main" {
 data "aws_iam_openid_connect_provider" "eks" {
   url = data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer
 }
+
+# ALB created by this ingress
+data "aws_lb" "ingress" {
+  tags = {
+    Name = "${var.sub_domain}-ingress"
+  }
+
+  depends_on = [kubernetes_ingress_v1.argo_https_ingress]
+}
