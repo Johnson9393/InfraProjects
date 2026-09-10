@@ -91,11 +91,11 @@ jobs:
       - name: update image tags in k8s deployment manifests
         run: |
           ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
-          BACKEND_IMAGE_TAG="${{ ECR_REGISTRY }}/dojo-dev-backend:${{ github.sha }}"
-          FRONTEND_IMAGE_TAG="${{ ECR_REGISTRY }}/dojo-dev-frontend:${{ github.sha }}"
+          BACKEND_IMAGE_TAG="${ECR_REGISTRY}/dojo-dev-backend:${{ github.sha }}"
+          FRONTEND_IMAGE_TAG="${ECR_REGISTRY}/dojo-dev-frontend:${{ github.sha }}"
 
-          sed -i "s|image: ${{ ECR_REGISTRY }}/dojo-dev-backend:.*|image: ${BACKEND_IMAGE_TAG}|" terraform-eks-3tier/dojo-app/k8s-services/backend.yaml
-          sed -i "s|image: ${{ ECR_REGISTRY }}/dojo-dev-frontend:.*|image: ${FRONTEND_IMAGE_TAG}|" terraform-eks-3tier/dojo-app/k8s-services/frontend.yaml
+          sed -i "s|image: ${ECR_REGISTRY}/dojo-dev-backend:.*|image: ${BACKEND_IMAGE_TAG}|" terraform-eks-3tier/dojo-app/k8s-services/backend.yaml
+          sed -i "s|image: ${ECR_REGISTRY}/dojo-dev-frontend:.*|image: ${FRONTEND_IMAGE_TAG}|" terraform-eks-3tier/dojo-app/k8s-services/frontend.yaml
 
           echo "Updated backend image tag to: ${BACKEND_IMAGE_TAG}"
           echo "Updated frontend image tag to: ${FRONTEND_IMAGE_TAG}"
