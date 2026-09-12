@@ -1,7 +1,7 @@
 provider "argocd" {
   server_addr = "${var.argo_sub_domain}.${var.domain_name}"
   username    = "admin"
-  password    = "TXeWABGNgjcwMppI%"
+  password    = "TXeWABGNgjcwMppI"
 }
 
 

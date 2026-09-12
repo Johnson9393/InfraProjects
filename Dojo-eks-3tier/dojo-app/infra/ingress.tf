@@ -20,7 +20,7 @@ resource "kubernetes_ingress_v1" "dojo_htpps_ingress" {
       "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
 
       # Tags for the ALB
-      "alb.ingress.kubernetes.io/tags" = "Environment=production,ManagedBy=Terraform,Name=${var.sub_domain}-ingress"
+      "alb.ingress.kubernetes.io/tags" = "Environment=production,ManagedBy=Terraform"
 
       # ALB group annotation
       "alb.ingress.kubernetes.io/group.name" = var.alb_group_name
