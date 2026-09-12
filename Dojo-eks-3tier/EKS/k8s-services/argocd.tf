@@ -18,7 +18,7 @@ resource "helm_release" "argocd" {
         # Set the service type to ClusterIP so that it is not exposed outside the cluster
         {
             name = "server.service.type"
-            value = "clusterIP"
+            value = "ClusterIP"
         },
         # Run insecure mode since ALB terminates SSL so that alb to argocd server is not encrypyted
         {

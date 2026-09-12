@@ -27,6 +27,11 @@ variable "sub_domain" {
   default = "dojo"
 }
 
+variable "argo_sub_domain" {
+  type    = string
+  default = "argo"
+}
+
 
 variable "rds_subnets" {
   type = list(object({

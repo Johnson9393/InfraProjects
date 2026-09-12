@@ -1,5 +1,5 @@
 # DOJO app  Infra creation for 3-tier app in EKS
-name: Terraform dojo eks infra
+name: dojo eks infra
 
 on:
   # Automatically run the workflow when Terraform-related code is pushed
