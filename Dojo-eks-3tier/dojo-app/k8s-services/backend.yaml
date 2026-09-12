@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: dojo
+  labels:
+    app: backend
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-backend:39e0251aeb7dd5a4d00ec41be9975fa7350d0b84
+        ports:
+        - containerPort: 8000
+
+        env:
+          # Non-sensitive configuration container variables
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_HOST
+          
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_PORT
+          
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_NAME
+          
+          - name: ALLOWED_ORIGINS
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: ALLOWED_ORIGINS
+          
+          # Sensitive configuration
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_USERNAME
+          
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_PASSWORD
+          
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_LINK
+          
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: SECRET_KEY
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+
+
+

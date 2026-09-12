@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "terraform-eks-3tier/dojo-app/src/**"
+      - "Dojo-eks-3tier/dojo-app/src/**"
 
   workflow_dispatch:
     inputs:
@@ -34,11 +34,11 @@ jobs:
       matrix:
         services:
           - name: frontend
-            path: terraform-eks-3tier/dojo-app/src/frontend
+            path: Dojo-eks-3tier/dojo-app/src/frontend
             ecr_repo: dojo-${{ inputs.environment || 'dev' }}-frontend
 
           - name: backend
-            path: terraform-eks-3tier/dojo-app/src/backend
+            path: Dojo-eks-3tier/dojo-app/src/backend
             ecr_repo: dojo-${{ inputs.environment || 'dev' }}-backend
 
     steps:
@@ -99,17 +99,17 @@ jobs:
           FRONTEND_IMAGE_TAG="${ECR_REGISTRY}/dojo-${{ inputs.environment || 'dev' }}-frontend:${{ github.sha }}"
 
           sed -i "s|image: .*|image: ${BACKEND_IMAGE_TAG}|" \
-            terraform-eks-3tier/dojo-app/k8s-services/backend.yaml
+            Dojo-eks-3tier/dojo-app/k8s-services/backend.yaml
 
           sed -i "s|image: .*|image: ${FRONTEND_IMAGE_TAG}|" \
-            terraform-eks-3tier/dojo-app/k8s-services/frontend.yaml
+            Dojo-eks-3tier/dojo-app/k8s-services/frontend.yaml
 
           echo "Updated backend image tag to: ${BACKEND_IMAGE_TAG}"
           echo "Updated frontend image tag to: ${FRONTEND_IMAGE_TAG}"
 
           grep "image:" \
-            terraform-eks-3tier/dojo-app/k8s-services/backend.yaml \
-            terraform-eks-3tier/dojo-app/k8s-services/frontend.yaml
+            Dojo-eks-3tier/dojo-app/k8s-services/backend.yaml \
+            Dojo-eks-3tier/dojo-app/k8s-services/frontend.yaml
 
       - name: Commit and push manifest changes
         run: |
@@ -117,8 +117,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add \
-            terraform-eks-3tier/dojo-app/k8s-services/backend.yaml \
-            terraform-eks-3tier/dojo-app/k8s-services/frontend.yaml
+            Dojo-eks-3tier/dojo-app/k8s-services/backend.yaml \
+            Dojo-eks-3tier/dojo-app/k8s-services/frontend.yaml
 
           if git diff --cached --quiet; then
             echo "Images already match ${{ github.sha }}, no changes to commit"

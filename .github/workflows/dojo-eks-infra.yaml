@@ -24,9 +24,9 @@ on:
         required: true
         type: choice
         options:
-          - terraform-eks-3tier/EKS/eks-core-infra
-          - terraform-eks-3tier/dojo-app/infra
-          - terraform-eks-3tier/EKS/k8s-services
+          - Dojo-eks-3tier/EKS/eks-core-infra
+          - Dojo-eks-3tier/dojo-app/infra
+          - Dojo-eks-3tier/EKS/k8s-services
 
       environment:
         description: 'Environment to deploy Infra'

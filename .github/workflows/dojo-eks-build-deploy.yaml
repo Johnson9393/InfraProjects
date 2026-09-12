@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "terraform-eks-3tier/dojo-app/src/**"
+      - "Dojo-eks-3tier/dojo-app/src/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -32,11 +32,11 @@ jobs:
       matrix:
         services:
           - name: frontend
-            path: terraform-eks-3tier/dojo-app/src/frontend
+            path: Dojo-eks-3tier/dojo-app/src/frontend
             ecr_repo: dojo-dev-frontend
 
           - name: backend
-            path: terraform-eks-3tier/dojo-app/src/backend
+            path: Dojo-eks-3tier/dojo-app/src/backend
             ecr_repo: dojo-dev-backend
     
     steps:

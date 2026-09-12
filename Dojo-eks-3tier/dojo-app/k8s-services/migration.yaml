@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migration
+  namespace: dojo
+  labels:
+    app: backend
+spec: 
+  backoffLimit: 3
+
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      restartPolicy: Never
+      
+      containers:
+      - name: backend
+        image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dojo-dev-backend:39e0251aeb7dd5a4d00ec41be9975fa7350d0b84
+        command: ["/bin/sh", "-c", "./migrate.sh"]
+
+        env:
+          # Non-sensitive configuration container variables
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_HOST
+          
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_PORT
+          
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: DB_NAME
+          
+          - name: ALLOWED_ORIGINS
+            valueFrom:
+              configMapKeyRef:
+                name: backend-config
+                key: ALLOWED_ORIGINS
+          
+          # Sensitive configuration
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_USERNAME
+          
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_PASSWORD
+          
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: DB_LINK
+          
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: SECRET_KEY
+
+
