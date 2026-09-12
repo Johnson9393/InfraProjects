@@ -21,7 +21,7 @@ resource "argocd_application" "argo_app" {
     }
 
     source {
-      repo_url        = "https://github.com/Johnson9393/InfraProjects/tree/main/Dojo-eks-3tier"
+      repo_url        = "https://github.com/Johnson9393/InfraProjects"
       path            = "Dojo-eks-3tier/dojo-app/k8s-services"
       target_revision = "main"
     }
