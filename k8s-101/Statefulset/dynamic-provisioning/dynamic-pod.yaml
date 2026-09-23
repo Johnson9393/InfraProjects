@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dynamic-demo-pod
+
+spec:
+  containers:
+    - name: app
+      image: nginx:alpine
+
+      volumeMounts:
+        - name: dynamic-storage
+          mountPath: /data
+
+  volumes:
+    - name: dynamic-storage
+      persistentVolumeClaim:
+        claimName: dynamic-demo-pvc
