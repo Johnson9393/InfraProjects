@@ -3,7 +3,7 @@
 # ============================================================================
 
 module "vpc" {
-  source = "../../modules/vpc"
+  source = "../../../modules/vpc"
 
   aws_region = var.aws_region
   vpc_name   = var.vpc_name
@@ -25,7 +25,7 @@ module "vpc" {
 # ============================================================================
 
 module "eks" {
-  source = "../../modules/eks"
+  source = "../../../modules/eks"
 
   cluster_name = var.eks_cluster_name
   cluster_version = var.eks_cluster_version

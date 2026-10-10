@@ -44,5 +44,5 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_nodes" {
   security_group_id            = aws_security_group.eks_nodes.id
   referenced_security_group_id = aws_security_group.eks_nodes.id
 
-  ip_protocol = "-1"
+  ip_protocol = "-1" # It means all protocols
 }

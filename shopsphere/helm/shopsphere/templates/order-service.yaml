@@ -1,0 +1,98 @@
+# Order Service Deployment runs the order-service application pods.
+{{- if .Values.services.orderService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-order-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: order-service
+spec:
+  replicas: {{ .Values.services.orderService.replicas }}
+
+  # Selector connects this Deployment to the order-service pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: order-service
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: order-service
+
+    spec:
+      # Order Service container configuration.
+      containers:
+        - name: order-service
+          image: "{{ .Values.services.orderService.image.repository }}:{{ .Values.services.orderService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # Application container port.
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.orderService.containerPort }}
+              protocol: TCP
+
+          # Non-sensitive application configuration.
+          env:
+            {{- range $key, $value := .Values.services.orderService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+            # Sensitive variables are loaded from Kubernetes Secrets.
+            {{- range $name, $config := .Values.services.orderService.secretEnv }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $config.secretName }}
+                  key: {{ $config.secretKey }}
+            {{- end }}
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.services.orderService.resources | nindent 12 }}
+
+          # Readiness probe controls when the pod receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.orderService.probes.readiness.path }}
+              port: {{ .Values.services.orderService.probes.readiness.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the container.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.orderService.probes.liveness.path }}
+              port: {{ .Values.services.orderService.probes.liveness.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+# Order Service provides stable internal networking for the order-service pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-order-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: order-service
+
+spec:
+  # ClusterIP keeps the Order Service internal to the Kubernetes cluster.
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: order-service
+
+  ports:
+    - name: http
+      port: {{ .Values.services.orderService.service.port }}
+      targetPort: {{ .Values.services.orderService.containerPort }}
+      protocol: TCP
+
+{{- end }}

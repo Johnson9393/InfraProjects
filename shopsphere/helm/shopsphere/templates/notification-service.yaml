@@ -1,0 +1,98 @@
+# Notification Service Deployment runs the notification-service application pods.
+{{- if .Values.services.notificationService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-notification-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service
+spec:
+  replicas: {{ .Values.services.notificationService.replicas }}
+
+  # Selector connects this Deployment to the notification-service pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: notification-service
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: notification-service
+
+    spec:
+      # Notification Service container configuration.
+      containers:
+        - name: notification-service
+          image: "{{ .Values.services.notificationService.image.repository }}:{{ .Values.services.notificationService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # Application container port.
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.notificationService.containerPort }}
+              protocol: TCP
+
+          # Non-sensitive application configuration.
+          env:
+            {{- range $key, $value := .Values.services.notificationService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+            # Sensitive variables are loaded from Kubernetes Secrets.
+            {{- range $name, $config := .Values.services.notificationService.secretEnv }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $config.secretName }}
+                  key: {{ $config.secretKey }}
+            {{- end }}
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.services.notificationService.resources | nindent 12 }}
+
+          # Readiness probe controls when the pod receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.notificationService.probes.readiness.path }}
+              port: {{ .Values.services.notificationService.probes.readiness.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the container.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.notificationService.probes.liveness.path }}
+              port: {{ .Values.services.notificationService.probes.liveness.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+# Notification Service provides stable internal networking for the notification-service pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-notification-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service
+
+spec:
+  # ClusterIP keeps the Notification Service internal to the Kubernetes cluster.
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service
+
+  ports:
+    - name: http
+      port: {{ .Values.services.notificationService.service.port }}
+      targetPort: {{ .Values.services.notificationService.containerPort }}
+      protocol: TCP
+
+{{- end }}

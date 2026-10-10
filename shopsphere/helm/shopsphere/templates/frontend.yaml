@@ -1,0 +1,85 @@
+# Frontend Deployment runs the ShopSphere frontend application pods.
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-frontend
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+
+  # Selector connects this Deployment to the frontend pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+
+    spec:
+      # Frontend container configuration.
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # NGINX serves the frontend application on port 80.
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.containerPort }}
+              protocol: TCP
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+
+          # Readiness probe controls when the frontend receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.frontend.probes.readiness.path }}
+              port: {{ .Values.frontend.probes.readiness.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the frontend.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.frontend.probes.liveness.path }}
+              port: {{ .Values.frontend.probes.liveness.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+# Frontend Service provides stable internal networking for the frontend pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-frontend
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+
+spec:
+  # ClusterIP keeps the frontend internal until the ALB Ingress exposes it.
+  type: ClusterIP
+
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.containerPort }}
+      protocol: TCP
+
+{{- end }}

@@ -1,0 +1,3 @@
+bucket = "shopsphere-terraform-state009"
+key    = "dev/app-infra/terraform.tfstate"
+region = "us-east-1"

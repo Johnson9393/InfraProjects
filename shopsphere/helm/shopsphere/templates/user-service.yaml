@@ -1,0 +1,98 @@
+# User Service Deployment runs the user-service application pods.
+{{- if .Values.services.userService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-user-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: user-service
+spec:
+  replicas: {{ .Values.services.userService.replicas }}
+
+  # Selector connects this Deployment to the user-service pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: user-service
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: user-service
+
+    spec:
+      # User Service container configuration.
+      containers:
+        - name: user-service
+          image: "{{ .Values.services.userService.image.repository }}:{{ .Values.services.userService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # Application container port.
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.userService.containerPort }}
+              protocol: TCP
+
+          # Non-sensitive application configuration.
+          env:
+            {{- range $key, $value := .Values.services.userService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+            # Sensitive variables are loaded from Kubernetes Secrets.
+            {{- range $name, $config := .Values.services.userService.secretEnv }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $config.secretName }}
+                  key: {{ $config.secretKey }}
+            {{- end }}
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.services.userService.resources | nindent 12 }}
+
+          # Readiness probe controls when the pod receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.userService.probes.readiness.path }}
+              port: {{ .Values.services.userService.probes.readiness.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the container.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.userService.probes.liveness.path }}
+              port: {{ .Values.services.userService.probes.liveness.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+# User Service provides stable internal networking for the user-service pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-user-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: user-service
+
+spec:
+  # ClusterIP keeps the User Service internal to the Kubernetes cluster.
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: user-service
+
+  ports:
+    - name: http
+      port: {{ .Values.services.userService.service.port }}
+      targetPort: {{ .Values.services.userService.containerPort }}
+      protocol: TCP
+
+{{- end }}

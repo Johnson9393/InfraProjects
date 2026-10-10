@@ -1,0 +1,98 @@
+# Product Service Deployment runs the product-service application pods.
+{{- if .Values.services.productService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-product-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: product-service
+spec:
+  replicas: {{ .Values.services.productService.replicas }}
+
+  # Selector connects this Deployment to the product-service pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: product-service
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: product-service
+
+    spec:
+      # Product Service container configuration.
+      containers:
+        - name: product-service
+          image: "{{ .Values.services.productService.image.repository }}:{{ .Values.services.productService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # Application container port.
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.productService.containerPort }}
+              protocol: TCP
+
+          # Non-sensitive application configuration.
+          env:
+            {{- range $key, $value := .Values.services.productService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+          # Sensitive configuration is loaded from Kubernetes Secrets.
+          # Sensitive variables are loaded from Kubernetes Secrets.
+            {{- range $name, $config := .Values.services.productService.secretEnv }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $config.secretName }}
+                  key: {{ $config.secretKey }}
+            {{- end }}
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.services.productService.resources | nindent 12 }}
+
+          # Readiness probe controls when the pod receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.productService.probes.readiness.path }}
+              port: {{ .Values.services.productService.probes.readiness.port }}
+              initialDelaySeconds: 10
+              periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the container.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.productService.probes.liveness.path }}
+              port: {{ .Values.services.productService.probes.liveness.port }}
+              initialDelaySeconds: 20
+              periodSeconds: 10
+
+---
+# Product Service provides stable internal networking for the product-service pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-product-service
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: product-service
+
+spec:
+  # ClusterIP keeps the Product Service internal to the Kubernetes cluster.
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: product-service
+
+  ports:
+    - name: http
+      port: {{ .Values.services.productService.service.port }}
+      targetPort: {{ .Values.services.productService.containerPort }}
+      protocol: TCP
+
+{{- end }}

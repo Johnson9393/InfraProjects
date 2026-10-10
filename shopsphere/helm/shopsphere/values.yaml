@@ -1,0 +1,468 @@
+# Global configuration shared across the ShopSphere deployment.
+global:
+  environment: dev
+  namespace: shopsphere-dev
+  awsRegion: us-east-1
+  imagePullPolicy: IfNotPresent
+
+# Configuration for ShopSphere backend microservices.
+services:
+  productService:
+    enabled: true
+    replicas: 1
+
+    image:
+      repository: shopsphere/product-service
+      tag: "1.0.0"
+
+    containerPort: 8001
+
+    service:
+      port: 8001
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8001"
+      GO_ENV: production
+      PRODUCT_DB_HOST: product-db
+      PRODUCT_DB_PORT: "5432"
+      PRODUCT_DB_NAME: products
+      LOG_LEVEL: info
+
+    # Database credentials will come from Kubernetes Secrets.
+    secretEnv:
+      PRODUCT_DB_USER:
+        secretName: product-db-credentials
+        secretKey: username
+      PRODUCT_DB_PASSWORD:
+        secretName: product-db-credentials
+        secretKey: password
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+    probes:
+      readiness:
+        path: /health
+        port: 8001
+      liveness:
+        path: /health
+        port: 8001
+  
+    # User service configuration for authentication and user management.
+  userService:
+    enabled: true
+    replicas: 1
+
+    # Container image configuration; environment-specific ECR values will override this.
+    image:
+      repository: shopsphere/user-service
+      tag: "1.0.0"
+
+    # Application container and internal Kubernetes Service configuration.
+    containerPort: 8002
+
+    service:
+      port: 8002
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8002"
+      GO_ENV: production
+      USER_DB_HOST: user-db
+      USER_DB_PORT: "5432"
+      USER_DB_NAME: users
+      LOG_LEVEL: info
+
+    # Sensitive database and authentication credentials come from Kubernetes Secrets.
+    secretEnv:
+      USER_DB_USER:
+        secretName: user-db-credentials
+        secretKey: username
+      USER_DB_PASSWORD:
+        secretName: user-db-credentials
+        secretKey: password
+      JWT_SECRET:
+        secretName: user-service-credentials
+        secretKey: jwt-secret
+
+    # Start with deliberately small resources so we can observe and tune them later.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Kubernetes uses these endpoints to determine whether the application is healthy.
+    probes:
+      readiness:
+        path: /health
+        port: 8002
+      liveness:
+        path: /health
+        port: 8002
+  
+    # Cart service configuration for shopping-cart operations.
+  cartService:
+    enabled: true
+    replicas: 1
+
+    # Container image configuration; environment-specific ECR values will override this.
+    image:
+      repository: shopsphere/cart-service
+      tag: "1.0.0"
+
+    # Application container and internal Kubernetes Service configuration.
+    containerPort: 8003
+
+    service:
+      port: 8003
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8003"
+      GO_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      PRODUCT_SERVICE_URL: http://product-service:8001
+      LOG_LEVEL: info
+
+    # Redis credentials come from Kubernetes Secrets.
+    secretEnv:
+      REDIS_PASSWORD:
+        secretName: redis-credentials
+        secretKey: password
+
+    # Start deliberately small so resource behavior can be tested and tuned.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+    # Kubernetes uses these endpoints to determine whether the application is healthy.
+    probes:
+      readiness:
+        path: /health
+        port: 8003
+      liveness:
+        path: /health
+        port: 8003
+  
+
+    # Order service configuration for order creation and processing.
+  orderService:
+    enabled: true
+    replicas: 1
+
+    # Container image configuration; environment-specific ECR values will override this.
+    image:
+      repository: shopsphere/order-service
+      tag: "1.0.0"
+
+    # Application container and internal Kubernetes Service configuration.
+    containerPort: 8004
+
+    service:
+      port: 8004
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8004"
+      GO_ENV: production
+      ORDER_DB_HOST: order-db
+      ORDER_DB_PORT: "5432"
+      ORDER_DB_NAME: orders
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      CART_SERVICE_URL: http://cart-service:8003
+      PRODUCT_SERVICE_URL: http://product-service:8001
+      LOG_LEVEL: info
+
+    # Sensitive database, Redis, RabbitMQ and JWT credentials come from Kubernetes Secrets.
+    secretEnv:
+      ORDER_DB_USER:
+        secretName: order-db-credentials
+        secretKey: username
+      ORDER_DB_PASSWORD:
+        secretName: order-db-credentials
+        secretKey: password
+      REDIS_PASSWORD:
+        secretName: redis-credentials
+        secretKey: password
+      RABBITMQ_USER:
+        secretName: rabbitmq-credentials
+        secretKey: username
+      RABBITMQ_PASSWORD:
+        secretName: rabbitmq-credentials
+        secretKey: password
+      JWT_SECRET:
+        secretName: order-service-credentials
+        secretKey: jwt-secret
+
+    # Start deliberately small so we can observe resource behavior and tune it later.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+    # Kubernetes uses these endpoints to determine whether the application is healthy.
+    probes:
+      readiness:
+        path: /health
+        port: 8004
+      liveness:
+        path: /health
+        port: 8004
+  
+    # Payment service configuration for payment processing.
+  paymentService:
+    enabled: true
+    replicas: 1
+
+    # Container image configuration; environment-specific ECR values will override this.
+    image:
+      repository: shopsphere/payment-service
+      tag: "1.0.0"
+
+    # Application container and internal Kubernetes Service configuration.
+    containerPort: 8005
+
+    service:
+      port: 8005
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8005"
+      GO_ENV: production
+      PAYMENT_DB_HOST: payment-db
+      PAYMENT_DB_PORT: "5432"
+      PAYMENT_DB_NAME: payments
+      ORDER_SERVICE_URL: http://order-service:8004
+      LOG_LEVEL: info
+
+    # Sensitive database, payment-provider and authentication credentials come from Kubernetes Secrets.
+    secretEnv:
+      PAYMENT_DB_USER:
+        secretName: payment-db-credentials
+        secretKey: username
+      PAYMENT_DB_PASSWORD:
+        secretName: payment-db-credentials
+        secretKey: password
+      RAZORPAY_KEY_ID:
+        secretName: payment-service-credentials
+        secretKey: razorpay-key-id
+      RAZORPAY_KEY_SECRET:
+        secretName: payment-service-credentials
+        secretKey: razorpay-key-secret
+      RAZORPAY_WEBHOOK_SECRET:
+        secretName: app-secrets
+        secretKey: RAZORPAY_WEBHOOK_SECRET
+      JWT_SECRET:
+        secretName: payment-service-credentials
+        secretKey: jwt-secret
+
+    # Start deliberately small so we can observe and tune resource behavior later.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+    # Kubernetes uses these endpoints to determine whether the application is healthy.
+    probes:
+      readiness:
+        path: /health
+        port: 8005
+      liveness:
+        path: /health
+        port: 8005
+  
+    # Notification service configuration for sending application notifications.
+  notificationService:
+    enabled: true
+    replicas: 1
+
+    # Container image configuration; environment-specific ECR values will override this.
+    image:
+      repository: shopsphere/notification-service
+      tag: "1.0.0"
+
+    # Application container and internal Kubernetes Service configuration.
+    containerPort: 8006
+
+    service:
+      port: 8006
+
+    # Non-sensitive application configuration.
+    env:
+      PORT: "8006"
+      FLASK_ENV: production
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      LOG_LEVEL: info
+      SES_SENDER_EMAIL: "johnson.kudumula09@gmail.com"
+      AWS_REGION: "us-east-1"
+
+    # RabbitMQ and AWS SES credentials come from Kubernetes Secrets.
+    secretEnv:
+      RABBITMQ_USER:
+        secretName: rabbitmq-credentials
+        secretKey: username
+      RABBITMQ_PASSWORD:
+        secretName: rabbitmq-credentials
+        secretKey: password
+      AWS_ACCESS_KEY_ID:
+        secretName: notification-service-credentials
+        secretKey: aws-access-key-id
+      AWS_SECRET_ACCESS_KEY:
+        secretName: notification-service-credentials
+        secretKey: aws-secret-access-key
+
+    # Start deliberately small so we can observe and tune resource behavior later.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+    # Kubernetes uses these endpoints to determine whether the application is healthy.
+    probes:
+      readiness:
+        path: /health
+        port: 8006
+      liveness:
+        path: /health
+        port: 8006
+
+# API Gateway configuration for routing external application traffic to internal services.
+apiGateway:
+  enabled: true
+  replicas: 1
+
+  # Container image configuration; environment-specific ECR values will override this.
+  image:
+    repository: shopsphere/api-gateway
+    tag: "1.0.0"
+
+  # Nginx listens on port 80 inside the container.
+  containerPort: 80
+
+  # The gateway will be exposed internally first; ALB exposure comes later through Ingress.
+  service:
+    port: 80
+
+  # Gateway configuration is supplied through its Nginx configuration.
+  config:
+    productServiceUrl: http://product-service:8001
+    userServiceUrl: http://user-service:8002
+    cartServiceUrl: http://cart-service:8003
+    orderServiceUrl: http://order-service:8004
+    paymentServiceUrl: http://payment-service:8005
+    notificationServiceUrl: http://notification-service:8006
+
+  # Start deliberately small so we can observe and tune resource behavior later.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  # Kubernetes uses these endpoints to determine whether the gateway is healthy.
+  probes:
+    readiness:
+      path: /
+      port: 80
+    liveness:
+      path: /
+      port: 80
+
+# Frontend configuration for the ShopSphere web application.
+frontend:
+  enabled: true
+  replicas: 1
+
+  # Container image configuration; environment-specific ECR values will override this.
+  image:
+    repository: shopsphere/frontend
+    tag: "1.0.0"
+
+  # Nginx serves the frontend application on port 80.
+  containerPort: 80
+
+  # Frontend is exposed internally; external access will eventually go through the API Gateway/ALB.
+  service:
+    port: 80
+
+  # Start deliberately small so we can observe and tune resource behavior later.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  # Kubernetes uses these endpoints to determine whether the frontend is healthy.
+  probes:
+    readiness:
+      path: /
+      port: 80
+    liveness:
+      path: /
+      port: 80
+
+
+seedJob:
+  enabled: true
+
+  image: ...
+  waitImage: busybox:1.36
+
+  # How many times the initContainer checks whether dependencies are ready.
+  waitAttempts: 60
+
+  # Seconds between dependency checks.
+  waitSleepSeconds: 5
+
+  # Kubernetes Job retry configuration.
+  backoffLimit: 5
+
+  # Automatically remove the completed Job after 5 minutes.
+  ttlSecondsAfterFinished: 300
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# ALB Ingress configuration for exposing the ShopSphere application.
+ingress:
+  enabled: true
+  className: alb
+  groupName: shopsphere-dev-alb
+  host: shop-dev.example.com
+  acmCertArn: <dev-certificate-arn>

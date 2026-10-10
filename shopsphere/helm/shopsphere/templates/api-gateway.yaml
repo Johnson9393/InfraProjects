@@ -1,0 +1,257 @@
+# API Gateway ConfigMap stores the NGINX routing configuration for all backend services.
+{{- if .Values.apiGateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-api-gateway-config
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        resolver kube-dns.kube-system.svc.cluster.local valid=30s;
+
+        server {
+            listen 80;
+            server_name localhost;
+
+            set $product_service product-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.productService.service.port }};
+            set $user_service user-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.userService.service.port }};
+            set $cart_service cart-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.cartService.service.port }};
+            set $order_service order-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.orderService.service.port }};
+            set $payment_service payment-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.paymentService.service.port }};
+            set $notification_service notification-service.{{ include "shopsphere.namespace" . }}.svc.cluster.local:{{ .Values.services.notificationService.service.port }};
+
+            location /api/products {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+
+                if ($request_method = 'OPTIONS') {
+                    return 204;
+                }
+
+                rewrite ^/api/products(.*)$ /api/v1/products$1 break;
+
+                proxy_pass http://$product_service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+
+            location /api/users {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+
+                if ($request_method = 'OPTIONS') {
+                    return 204;
+                }
+
+                rewrite ^/api/users(.*)$ /api/v1/users$1 break;
+
+                proxy_pass http://$user_service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+
+            location /api/cart {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+
+                if ($request_method = 'OPTIONS') {
+                    return 204;
+                }
+
+                rewrite ^/api/cart(.*)$ /api/v1/cart$1 break;
+
+                proxy_pass http://$cart_service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Authorization $http_authorization;
+            }
+
+            location /api/orders {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+
+                if ($request_method = 'OPTIONS') {
+                    return 204;
+                }
+
+                rewrite ^/api/orders(.*)$ /api/v1/orders$1 break;
+
+                proxy_pass http://$order_service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Authorization $http_authorization;
+            }
+
+            location /api/payments {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+
+                if ($request_method = 'OPTIONS') {
+                    return 204;
+                }
+
+                rewrite ^/api/payments(.*)$ /api/v1/payments$1 break;
+
+                proxy_pass http://$payment_service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Authorization $http_authorization;
+            }
+
+            location = /api/health/product-service {
+                proxy_pass http://$product_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location = /api/health/user-service {
+                proxy_pass http://$user_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location = /api/health/cart-service {
+                proxy_pass http://$cart_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location = /api/health/order-service {
+                proxy_pass http://$order_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location = /api/health/payment-service {
+                proxy_pass http://$payment_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location = /api/health/notification-service {
+                proxy_pass http://$notification_service/health;
+                proxy_set_header Host $host;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 3s;
+            }
+
+            location /health {
+                access_log off;
+                return 200 "OK\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+
+---
+# API Gateway Deployment runs the NGINX API Gateway pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-api-gateway
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+
+spec:
+  replicas: {{ .Values.apiGateway.replicas }}
+
+  # Selector connects this Deployment to the API Gateway pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api-gateway
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api-gateway
+
+    spec:
+      containers:
+        - name: nginx
+          image: "{{ .Values.apiGateway.image.repository }}:{{ .Values.apiGateway.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # NGINX listens on port 80.
+          ports:
+            - name: http
+              containerPort: {{ .Values.apiGateway.containerPort }}
+              protocol: TCP
+
+          # Mount the NGINX configuration supplied by the ConfigMap.
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+
+          # Readiness determines when the gateway can receive traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.apiGateway.probes.readiness.path }}
+              port: {{ .Values.apiGateway.probes.readiness.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.apiGateway.resources | nindent 12 }}
+
+      # Volume created as ConfigMAP  for nginx.conf cnfiguration. 
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "shopsphere.fullname" . }}-api-gateway-config
+
+---
+# API Gateway Service provides stable internal networking for the gateway pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-api-gateway
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+
+spec:
+  # ClusterIP keeps the API Gateway internal until the ALB Ingress exposes it.
+  type: ClusterIP
+
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+
+  ports:
+    - name: http
+      port: {{ .Values.apiGateway.service.port }}
+      targetPort: {{ .Values.apiGateway.containerPort }}
+      protocol: TCP
+
+{{- end }}

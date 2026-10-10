@@ -1,0 +1,98 @@
+# Payment Service Deployment runs the payment-service application pods.
+{{- if .Values.services.paymentService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-payment-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: payment-service
+spec:
+  replicas: {{ .Values.services.paymentService.replicas }}
+
+  # Selector connects this Deployment to the payment-service pods.
+  selector:
+    matchLabels:
+      {{- include "shopsphere.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: payment-service
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: payment-service
+
+    spec:
+      # Payment Service container configuration.
+      containers:
+        - name: payment-service
+          image: "{{ .Values.services.paymentService.image.repository }}:{{ .Values.services.paymentService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # Application container port.
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.paymentService.containerPort }}
+              protocol: TCP
+
+          # Non-sensitive application configuration.
+          env:
+            {{- range $key, $value := .Values.services.paymentService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+            # Sensitive variables are loaded from Kubernetes Secrets.
+            {{- range $name, $config := .Values.services.paymentService.secretEnv }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $config.secretName }}
+                  key: {{ $config.secretKey }}
+            {{- end }}
+
+          # Resource requests and limits control scheduling and resource usage.
+          resources:
+            {{- toYaml .Values.services.paymentService.resources | nindent 12 }}
+
+          # Readiness probe controls when the pod receives traffic.
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.services.paymentService.probes.readiness.path }}
+              port: {{ .Values.services.paymentService.probes.readiness.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          # Liveness probe controls whether Kubernetes should restart the container.
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.services.paymentService.probes.liveness.path }}
+              port: {{ .Values.services.paymentService.probes.liveness.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+---
+# Payment Service provides stable internal networking for the payment-service pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-payment-service
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: payment-service
+
+spec:
+  # ClusterIP keeps the Payment Service internal to the Kubernetes cluster.
+  selector:
+    {{- include "shopsphere.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: payment-service
+
+  ports:
+    - name: http
+      port: {{ .Values.services.paymentService.service.port }}
+      targetPort: {{ .Values.services.paymentService.containerPort }}
+      protocol: TCP
+
+{{- end }}

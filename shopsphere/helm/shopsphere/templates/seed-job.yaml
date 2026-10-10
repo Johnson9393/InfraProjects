@@ -1,0 +1,91 @@
+# Seed Job runs after Helm installs or upgrades the ShopSphere application.
+{{- if .Values.seedJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "shopsphere.fullname" . }}-seed-job
+  namespace: {{ include "shopsphere.namespace" . }}
+  labels:
+    {{- include "shopsphere.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: seed-job
+
+  # Run the seed job after the application installation or upgrade completes.
+  # If you have multiple Helm hooks for different purposes, hook-weight determines their execution order.
+  # delete-policy ensures the seed job is removed before the next installation or upgrade.
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+
+spec:
+  # Automatically remove the completed Job after the configured retention period.
+  ttlSecondsAfterFinished: {{ .Values.seedJob.ttlSecondsAfterFinished }}
+
+  # Retry the Job when the seed process fails.
+  backoffLimit: {{ .Values.seedJob.backoffLimit }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "shopsphere.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: seed-job
+
+    spec:
+      # The Job should run to completion and not restart after completion.
+      # If job fails, it will be not restart within the same pod. Instead based oon backofflimit, new pod woukd be created as a new job
+      restartPolicy: Never
+
+      # Wait for the API Gateway to become reachable before starting the seed process.
+      initContainers:
+        - name: wait-for-api-gateway
+          image: {{ .Values.seedJob.waitImage }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+
+              url="http://{{ include "shopsphere.fullname" . }}-api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local/api/health/product-service"
+
+              echo "Waiting for $url ..."
+
+              i=0
+
+              until wget -q -O- --timeout=3 "$url" >/dev/null 2>&1; do
+                i=$((i + 1))
+
+                if [ "$i" -ge {{ .Values.seedJob.waitAttempts }} ]; then
+                  echo "api-gateway not ready after $i attempts" >&2
+                  exit 1
+                fi
+
+                echo "  not ready yet, retrying in {{ .Values.seedJob.waitSleepSeconds }}s..."
+                sleep {{ .Values.seedJob.waitSleepSeconds }}
+              done
+
+              echo "api-gateway is reachable."
+
+      # Seed container runs the actual application seed process.
+      containers:
+        - name: seed-data
+          image: {{ .Values.seedJob.image }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+
+          # API Gateway is the entry point used by the seed process.
+          env:
+            - name: API_URL
+              value: "http://{{ include "shopsphere.fullname" . }}-api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local"
+
+            - name: PREFLIGHT_ATTEMPTS
+              value: {{ .Values.seedJob.waitAttempts | quote }}
+
+            - name: PREFLIGHT_SLEEP
+              value: {{ .Values.seedJob.waitSleepSeconds | quote }}
+
+          # Resource requests and limits control resources used by the seed process.
+          resources:
+            {{- toYaml .Values.seedJob.resources | nindent 12 }}
+
+{{- end }}
