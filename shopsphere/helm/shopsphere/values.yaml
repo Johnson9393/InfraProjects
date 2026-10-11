@@ -24,7 +24,7 @@ services:
     env:
       PORT: "8001"
       GO_ENV: production
-      PRODUCT_DB_HOST: product-db
+      PRODUCT_DB_HOST: product-db-rw
       PRODUCT_DB_PORT: "5432"
       PRODUCT_DB_NAME: products
       LOG_LEVEL: info
@@ -74,7 +74,7 @@ services:
     env:
       PORT: "8002"
       GO_ENV: production
-      USER_DB_HOST: user-db
+      USER_DB_HOST: user-db-rw
       USER_DB_PORT: "5432"
       USER_DB_NAME: users
       LOG_LEVEL: info
@@ -179,7 +179,7 @@ services:
     env:
       PORT: "8004"
       GO_ENV: production
-      ORDER_DB_HOST: order-db
+      ORDER_DB_HOST: order-db-rw
       ORDER_DB_PORT: "5432"
       ORDER_DB_NAME: orders
       REDIS_HOST: redis
@@ -249,7 +249,7 @@ services:
     env:
       PORT: "8005"
       GO_ENV: production
-      PAYMENT_DB_HOST: payment-db
+      PAYMENT_DB_HOST: payment-db-rw
       PAYMENT_DB_PORT: "5432"
       PAYMENT_DB_NAME: payments
       ORDER_SERVICE_URL: http://order-service:8004

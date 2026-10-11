@@ -121,9 +121,9 @@ locals {
     }
 
     "payment-service-credentials" = {
-      jwt_secret              = random_password.jwt[var.env].result
-      razorpay_key_id         = var.razorpay_key_id
-      razorpay_key_secret     = var.razorpay_key_secret
+      jwt_secret          = random_password.jwt[var.env].result
+      razorpay_key_id     = var.razorpay_key_id
+      razorpay_key_secret = var.razorpay_key_secret
     }
 
     "app-secrets" = {
@@ -148,4 +148,28 @@ locals {
       }
     }
   ]...)
+
+
+  # ---------------------------------------------------------------------------
+  # CloudNativePG configuration — Dev only
+  # ---------------------------------------------------------------------------
+
+  # CNPG manages PostgreSQL in Dev.
+  # Prod will use RDS, which will be configured separately later.
+  cnpg_enabled_for_env = (
+    var.enable_cnpg && var.env == "dev"
+  )
+
+  # Prepare the CNPG cluster configuration for databases.tf.
+  # Reuse the existing shopsphere namespace and the cluster definitions
+  # provided through var.cnpg_clusters.
+  cnpg_clusters_effective = local.cnpg_enabled_for_env ? {
+    for cluster_name, config in var.cnpg_clusters :
+    cluster_name => merge(config, {
+      cluster_name = cluster_name
+      namespace    = local.cluster_namespace
+      environment  = var.env
+    })
+  } : {}
+
 }
