@@ -27,11 +27,11 @@ module "vpc" {
 module "eks" {
   source = "../../../modules/eks"
 
-  cluster_name = var.eks_cluster_name
+  cluster_name    = var.eks_cluster_name
   cluster_version = var.eks_cluster_version
 
   vpc_id             = module.vpc.vpc_id
-  private_subnet_ids  = module.vpc.private_subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
 
   endpoint_private_access = var.eks_cluster_endpoint_private_access
   endpoint_public_access  = var.eks_cluster_endpoint_public_access

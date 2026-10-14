@@ -20,22 +20,58 @@ variable "env" {
 }
 
 # Environment-specific ShopSphere configuration.
+
 variable "environments" {
-  description = "ShopSphere environment configuration."
+  description = "Environment-specific ShopSphere configuration."
 
   type = map(object({
-    environment_label = optional(string)
+    environment_label  = optional(string)
+    namespace          = optional(string)
+    target_revision    = optional(string)
+    destination_server = optional(string)
+    subdomain          = optional(string)
+    values_file        = optional(string)
+    argocd_app_name    = optional(string)
+    helm_release_name  = optional(string)
+    seed_job_enabled   = optional(bool)
+    service_replicas   = optional(number)
+
+    ingress_services = optional(map(object({
+      enabled          = optional(bool, true)
+      host             = optional(string)
+      host_prefix      = optional(string)
+      path             = optional(string, "/")
+      path_type        = optional(string, "Prefix")
+      service_name     = string
+      service_port     = number
+      healthcheck_path = optional(string, "/health")
+    })))
   }))
 
   default = {
     dev = {
       environment_label = "development"
+      namespace         = "shopsphere"
+      subdomain         = "shop"
+      seed_job_enabled  = true
+      service_replicas  = 1
     }
 
     prod = {
       environment_label = "production"
+      namespace         = "shopsphere"
+      subdomain         = "shop"
+      seed_job_enabled  = true
+      service_replicas  = 1
     }
   }
+}
+
+
+variable "enable_cluster_resources" {
+  description = "Provision namespace, data stores, ingress, and DNS on the cluster in var.cluster_name"
+  type        = bool
+  default     = false
 }
 
 
@@ -260,6 +296,171 @@ variable "rabbitmq_resources" {
     limits   = { cpu = "500m", memory = "512Mi" }
   }
 }
+
+
+variable "domain_name" {
+  description = "ShopSphere Route 53 hosted domain"
+  type        = string
+  default     = "infralabx.space"
+}
+
+variable "acm_cert_arn" {
+  description = "Optional existing ACM certificate ARN override"
+  type        = string
+  default     = null
+}
+
+
+# ---------------------------------------------------------------------------
+# Ingress and ALB configuration
+# ---------------------------------------------------------------------------
+
+variable "enable_ingress" {
+  description = "Enable ALB ingress resources for ShopSphere services"
+  type        = bool
+  default     = true
+}
+
+variable "ingress_class_name" {
+  description = "IngressClass handled by AWS Load Balancer Controller"
+  type        = string
+  default     = "alb"
+}
+
+variable "alb_group_name" {
+  description = "Shared ALB group name for ShopSphere ingress resources"
+  type        = string
+  default     = "shopsphere-shared-alb"
+}
+
+variable "ingress_services" {
+  description = "ShopSphere Kubernetes services exposed through ALB"
+  type = map(object({
+    enabled          = optional(bool, true)
+    host             = optional(string)
+    host_prefix      = optional(string)
+    path             = optional(string, "/")
+    path_type        = optional(string, "Prefix")
+    service_name     = string
+    service_port     = number
+    healthcheck_path = optional(string, "/health")
+  }))
+
+  default = {
+    frontend = {
+      host_prefix      = "shop"
+      service_name     = "frontend"
+      service_port     = 80
+      path             = "/"
+      healthcheck_path = "/"
+    }
+
+    api-gateway = {
+      host_prefix      = "api"
+      service_name     = "api-gateway"
+      service_port     = 80
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    product-service = {
+      enabled          = false
+      host_prefix      = "product"
+      service_name     = "product-service"
+      service_port     = 8001
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    user-service = {
+      enabled          = false
+      host_prefix      = "users"
+      service_name     = "user-service"
+      service_port     = 8002
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    cart-service = {
+      enabled          = false
+      host_prefix      = "cart"
+      service_name     = "cart-service"
+      service_port     = 8003
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    order-service = {
+      enabled          = false
+      host_prefix      = "orders"
+      service_name     = "order-service"
+      service_port     = 8004
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    payment-service = {
+      enabled          = false
+      host_prefix      = "payments"
+      service_name     = "payment-service"
+      service_port     = 8005
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+
+    notification-service = {
+      enabled          = false
+      host_prefix      = "notifications"
+      service_name     = "notification-service"
+      service_port     = 8006
+      path             = "/"
+      healthcheck_path = "/health"
+    }
+  }
+}
+
+
+# Platform environment — ArgoCD and shared platform services
+variable "platform_env" {
+  description = "Environment hosting shared platform services"
+  type        = string
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "prod"], var.platform_env)
+    error_message = "platform_env must be dev or prod."
+  }
+}
+
+# Default number of application replicas
+variable "service_replicas" {
+  description = "Default replica count for ShopSphere services"
+  type        = number
+  default     = 1
+}
+
+# Enable or disable the database seed job
+variable "seed_job_enabled" {
+  description = "Whether to run the application database seed job"
+  type        = bool
+  default     = true
+}
+
+# Application subdomain used for hostnames
+variable "app_subdomain" {
+  description = "Application subdomain under the main domain"
+  type        = string
+  default     = "shopsphere"
+}
+
+# Route 53 hosted zone ID used for ALB alias records
+variable "aws_alb_zoneid" {
+  description = "Route 53 hosted zone ID for the ALB alias target"
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 
 
 

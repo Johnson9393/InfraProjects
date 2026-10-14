@@ -3,6 +3,14 @@ locals {
   env_prefix        = "${var.env}-"
   cluster_namespace = "shopsphere-${var.env}"
   cluster_name      = "${var.env}-shopsphere"
+  env_dns_suffix    = "${var.env}.${var.domain_name}"
+  platform_env      = var.platform_env
+  cluster_env_cfg   = var.environments[var.env] #map-key lookup sytax not list []
+  cluster_env_label = coalesce(
+    try(local.cluster_env_cfg.environment_label, null),
+    var.env
+  )
+  alb_group_name = var.alb_group_name
 
   # ECR repository names for all ShopSphere application components.
   ecr_repos = [
@@ -172,4 +180,58 @@ locals {
     })
   } : {}
 
+
+  #----------------------------------------------------------------------------
+  #
+  #ACM Route 53 Settings
+  #
+  #----------------------------------------------------------------------------
+  acm_cert_arn = coalesce(
+    var.acm_cert_arn,
+    aws_acm_certificate_validation.env.certificate_arn
+  )
+
+
+  # ---------------------------------------------------------------------------
+  # ALB Ingress configuration for ShopSphere services
+  # ---------------------------------------------------------------------------
+
+  ingress_services = var.enable_cluster_resources ? {
+    for target in flatten([
+      for env_key, env_cfg in {
+        (var.env) = local.cluster_env_cfg
+        } : [
+        for svc_key, svc_cfg in coalesce(
+          try(env_cfg.ingress_services, null),
+          var.ingress_services
+          ) : {
+          key       = "${env_key}-${svc_key}"
+          env_key   = env_key
+          namespace = local.cluster_namespace
+          environment_label = coalesce(
+            try(env_cfg.environment_label, null),
+            env_key
+          )
+
+          svc_key = svc_key
+
+          host = coalesce(
+            try(svc_cfg.host, null),
+            "${coalesce(try(svc_cfg.host_prefix, null), svc_key)}.${env_key}.${var.domain_name}"
+          )
+
+          path             = try(svc_cfg.path, "/")
+          path_type        = try(svc_cfg.path_type, "Prefix")
+          service_name     = svc_cfg.service_name
+          service_port     = svc_cfg.service_port
+          healthcheck_path = try(svc_cfg.healthcheck_path, "/health")
+        }
+        if try(svc_cfg.enabled, true) && var.enable_ingress
+      ]
+    ]) : target.key => target
+  } : {}
+
 }
+
+
+

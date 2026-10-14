@@ -27,3 +27,16 @@ output "cluster_oidc_issuer_url" {
   description = "OIDC issuer URL of the EKS cluster"
   value       = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
+
+output "oidc_provider_arn" {
+  description = "ARN of the EKS IAM OIDC provider"
+  value       = aws_iam_openid_connect_provider.this.arn
+}
+
+output "oidc_issuer_hostpath" {
+  description = "OIDC issuer URL without the HTTPS scheme"
+  value = trimprefix(
+    aws_eks_cluster.main.identity[0].oidc[0].issuer,
+    "https://"
+  )
+}

@@ -1,27 +1,3 @@
-# ============================================================================
-# EKS OIDC Provider
-# ============================================================================
-
-# Creates the EKS cluster's OIDC Identity Provider in AWS IAM.
-#
-# This allows IAM to trust identities coming from Kubernetes
-# ServiceAccounts through the EKS OIDC issuer.
-#
-# This is required for IRSA (IAM Roles for Service Accounts).
-
-resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
-
-  url = module.eks.cluster_oidc_issuer_url
-
-  client_id_list = [
-    "sts.amazonaws.com"
-  ]
-
-  tags = {
-    Name      = "${var.eks_cluster_name}-eks-oidc"
-    ManagedBy = "Terraform"
-  }
-}
 
 # ============================================================================
 # IAM Role for EBS CSI Driver - IRSA
@@ -38,15 +14,15 @@ resource "aws_iam_role" "ebs_csi_driver" {
         Effect = "Allow"
 
         Principal = {
-          Federated = aws_iam_openid_connect_provider.eks_oidc_provider.arn
+          Federated = module.eks.oidc_provider_arn
         }
 
         Action = "sts:AssumeRoleWithWebIdentity"
 
         Condition = {
           StringEquals = {
-            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
-            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud" = "sts.amazonaws.com"
+            "${module.eks.oidc_issuer_hostpath}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+            "${module.eks.oidc_issuer_hostpath}:aud" = "sts.amazonaws.com"
           }
         }
       }

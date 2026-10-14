@@ -1,0 +1,151 @@
+
+name: ShopSphere Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to manage"
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+
+      infra_path:
+        description: "Terraform directory to manage"
+        type: choice
+        required: true
+        options:
+          - shopsphere-infra/infra/core-infra/cluster
+          - shopsphere-infra/infra/core-infra/k8-services
+          - shopsphere-infra/infra/app-infra
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: "1.15.5"
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_ENV: ${{ inputs.environment }}
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure workflow runs from main
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this workflow from the main branch."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.environment == 'dev' && vars.AWS_TERRAFORM_ROLE_ARN_DEV || vars.AWS_TERRAFORM_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Check environment configuration
+        working-directory: ${{ inputs.infra_path }}
+        shell: bash
+        run: |
+          test -s "vars/${TF_ENV}.tfbackend" || {
+            echo "::error::Missing or empty vars/${TF_ENV}.tfbackend"
+            exit 1
+          }
+
+          test -s "vars/${TF_ENV}.tfvars" || {
+            echo "::error::Missing or empty vars/${TF_ENV}.tfvars"
+            exit 1
+          }
+
+      - name: Terraform Format Check
+        working-directory: ${{ inputs.infra_path }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: ${{ inputs.infra_path }}
+        run: |
+          terraform init \
+            -backend-config="vars/${TF_ENV}.tfbackend"
+
+      - name: Terraform Validate
+        working-directory: ${{ inputs.infra_path }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ inputs.infra_path }}
+        run: |
+          terraform plan \
+            -input=false \
+            -var-file="vars/${TF_ENV}.tfvars" \
+            -out=tfplan
+
+          terraform show -no-color tfplan | tee tfplan.txt
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ inputs.environment }}-${{ github.run_id }}
+          path: |
+            ${{ inputs.infra_path }}/tfplan
+            ${{ inputs.infra_path }}/tfplan.txt
+          if-no-files-found: error
+          retention-days: 5
+
+  terraform-apply:
+    name: Terraform Apply
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+
+    # This job pauses for approval when required reviewers
+    # are configured in the selected GitHub Environment.
+    environment:
+      name: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.environment == 'dev' && vars.AWS_TERRAFORM_ROLE_ARN_DEV || vars.AWS_TERRAFORM_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download Reviewed Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ inputs.environment }}-${{ github.run_id }}
+          path: ${{ inputs.infra_path }}
+
+      - name: Terraform Init
+        working-directory: ${{ inputs.infra_path }}
+        run: |
+          terraform init \
+            -input=false \
+            -backend-config="vars/${TF_ENV}.tfbackend"
+
+      - name: Terraform Apply
+        working-directory: ${{ inputs.infra_path }}
+        run: terraform apply -input=false tfplan

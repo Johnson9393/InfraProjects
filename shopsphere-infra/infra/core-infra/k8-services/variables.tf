@@ -58,3 +58,12 @@ variable "cnpg_chart_version" {
 variable "cnpg_namespace" {
   default = "cnpg-system"
 }
+
+
+# AWS Load Balancer Controller
+
+variable "awsloadbalancercontroller_sa" {
+  description = "Name of the AWS Load Balancer Controller service account"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}

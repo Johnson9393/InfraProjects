@@ -10,7 +10,7 @@ resource "kubernetes_namespace_v1" "cnpg" {
       "app.kubernetes.io/name"       = "cloudnative-pg"
       "app.kubernetes.io/part-of"    = "shopsphere"
       "app.kubernetes.io/managed-by" = "terraform"
-      environment                   = var.env
+      environment                    = var.env
     }
   }
 }
