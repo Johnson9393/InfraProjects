@@ -48,7 +48,7 @@ resource "aws_eks_node_group" "main" {
   node_role_arn = aws_iam_role.eks_node.arn
   subnet_ids    = var.private_subnet_ids
 
-   version = each.value.kubernetes_version
+  version = each.value.kubernetes_version
 
   capacity_type  = "ON_DEMAND"
   instance_types = [each.value.instance_type]

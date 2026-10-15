@@ -457,8 +457,7 @@ variable "app_subdomain" {
 variable "aws_alb_zoneid" {
   description = "Route 53 hosted zone ID for the ALB alias target"
   type        = string
-  default     = null
-  nullable    = true
+  default     = "Z35SXDOTRQ7X7K"
 }
 
 

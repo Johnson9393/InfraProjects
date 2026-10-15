@@ -56,6 +56,6 @@ resource "kubernetes_ingress_v1" "service" {
 
   depends_on = [
     kubernetes_namespace_v1.shopsphere,
-    aws_acm_certificate_validation.env,
+    data.aws_acm_certificate.wildcard
   ]
 }

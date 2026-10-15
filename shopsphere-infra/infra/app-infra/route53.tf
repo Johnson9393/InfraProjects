@@ -1,6 +1,10 @@
 # -----------------------------------------------------------------------------
 # Route 53 - DNS aliases for ShopSphere services
 # -----------------------------------------------------------------------------
+data "aws_route53_zone" "main" {
+  name         = var.domain_name
+  private_zone = false
+}
 
 # Wait for AWS Load Balancer Controller to populate
 # the ALB hostname in Kubernetes Ingress status.
@@ -42,9 +46,8 @@ resource "aws_route53_record" "service" {
   type    = "A"
 
   alias {
-    name = data.aws_lb.ingress.dns_name
-
-    zone_id                = data.aws_lb.ingress.zone_id
+    name = data.kubernetes_ingress_v1.service[each.key].status[0].load_balancer[0].ingress[0].hostname
+    zone_id = data.aws_lb.ingress.zone_id
     evaluate_target_health = true
   }
 

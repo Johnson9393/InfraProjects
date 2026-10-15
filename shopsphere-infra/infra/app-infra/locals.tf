@@ -186,10 +186,7 @@ locals {
   #ACM Route 53 Settings
   #
   #----------------------------------------------------------------------------
-  acm_cert_arn = coalesce(
-    var.acm_cert_arn,
-    aws_acm_certificate_validation.env.certificate_arn
-  )
+  acm_cert_arn = coalesce(var.acm_cert_arn, data.aws_acm_certificate.wildcard.arn)
 
 
   # ---------------------------------------------------------------------------

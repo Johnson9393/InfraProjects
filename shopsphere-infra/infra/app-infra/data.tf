@@ -7,3 +7,9 @@ data "aws_eks_cluster" "cluster" {
 data "aws_eks_cluster_auth" "cluster" {
   name = data.aws_eks_cluster.cluster.name
 }
+
+data "aws_acm_certificate" "wildcard" {
+  domain      = "*.${var.env}.${var.domain_name}"
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
