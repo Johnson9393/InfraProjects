@@ -13,16 +13,23 @@ resource "kubernetes_ingress_v1" "service" {
     annotations = {
       "alb.ingress.kubernetes.io/scheme"                   = "internet-facing"
       "alb.ingress.kubernetes.io/target-type"              = "ip"
-      "alb.ingress.kubernetes.io/listen-ports"              = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
-      "alb.ingress.kubernetes.io/ssl-redirect"              = "443"
-      "alb.ingress.kubernetes.io/certificate-arn"           = local.acm_cert_arn
-      "alb.ingress.kubernetes.io/healthcheck-path"          = each.value.healthcheck_path
-      "alb.ingress.kubernetes.io/healthcheck-protocol"      = "HTTP"
-      "alb.ingress.kubernetes.io/load-balancer-attributes"  = "idle_timeout.timeout_seconds=60"
-      "alb.ingress.kubernetes.io/ssl-policy"                = "ELBSecurityPolicy-TLS-1-2-2017-01"
-      "alb.ingress.kubernetes.io/tags"                      = "Environment=${each.value.environment_label},ManagedBy=Terraform,Name=${var.app_subdomain}-ingress"
-      "alb.ingress.kubernetes.io/group.name"                = local.alb_group_name
+      "alb.ingress.kubernetes.io/listen-ports"             = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
+      "alb.ingress.kubernetes.io/ssl-redirect"             = "443"
+      "alb.ingress.kubernetes.io/certificate-arn"          = local.acm_cert_arn
+      "alb.ingress.kubernetes.io/healthcheck-path"         = each.value.healthcheck_path
+      "alb.ingress.kubernetes.io/healthcheck-protocol"     = "HTTP"
+      "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
+      "alb.ingress.kubernetes.io/ssl-policy"               = "ELBSecurityPolicy-TLS-1-2-2017-01"
+      "alb.ingress.kubernetes.io/tags"                     = "Environment=${each.value.environment_label},ManagedBy=Terraform,Name=${var.app_subdomain}-ingress"
+      "alb.ingress.kubernetes.io/group.name"               = local.alb_group_name
     }
+  }
+
+  wait_for_load_balancer = true
+
+  timeouts {
+    create = "10m"
+    delete = "10m"
   }
 
   spec {

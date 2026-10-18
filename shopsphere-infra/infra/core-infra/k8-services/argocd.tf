@@ -57,8 +57,16 @@ resource "kubernetes_ingress_v1" "argocd_ingress_tls" {
   depends_on = [
     kubernetes_namespace_v1.argocd[0],
     helm_release.argocd[0],
+    helm_release.aws_load_balancer_controller,
     aws_acm_certificate_validation.env[0]
   ]
+
+  wait_for_load_balancer = true
+
+  timeouts {
+    create = "10m"
+    delete = "10m"
+  }
 
   spec {
     ingress_class_name = "alb"
@@ -88,20 +96,4 @@ resource "kubernetes_ingress_v1" "argocd_ingress_tls" {
       }
     }
   }
-}
-
-resource "aws_route53_record" "argocd" {
-  count = local.deploy_argocd ? 1 : 0
-
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "argocd.${var.app_subdomain}.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = kubernetes_ingress_v1.argocd_ingress_tls[0].status[0].load_balancer[0].ingress[0].hostname
-    zone_id                = var.aws_alb_zoneid
-    evaluate_target_health = true
-  }
-
-  depends_on = [kubernetes_ingress_v1.argocd_ingress_tls]
 }

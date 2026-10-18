@@ -22,6 +22,13 @@ resource "kubernetes_ingress_v1" "prometheus_ingress" {
     }
   }
 
+  wait_for_load_balancer = true
+
+  timeouts {
+    create = "10m"
+    delete = "10m"
+  }
+
   spec {
     ingress_class_name = "alb"
 
@@ -80,6 +87,13 @@ resource "kubernetes_ingress_v1" "grafana_ingress" {
     }
   }
 
+  wait_for_load_balancer = true
+
+  timeouts {
+    create = "10m"
+    delete = "10m"
+  }
+
   spec {
     ingress_class_name = "alb"
 
@@ -114,49 +128,3 @@ resource "kubernetes_ingress_v1" "grafana_ingress" {
   ]
 }
 
-
-# wait for alb controller to populate the alb DNS in ingress status
-resource "time_sleep" "wait_for_monitoring_ingress" {
-  count = local.deploy_monitoring ? 1 : 0
-
-  depends_on = [
-    kubernetes_ingress_v1.grafana_ingress[0],
-    kubernetes_ingress_v1.prometheus_ingress[0],
-  ]
-
-  create_duration = "120s"
-}
-
-
-resource "aws_route53_record" "grafana" {
-  count = local.deploy_monitoring ? 1 : 0
-
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "grafana.${var.app_subdomain}.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = kubernetes_ingress_v1.grafana_ingress[0].status[0].load_balancer[0].ingress[0].hostname
-    zone_id                = var.aws_alb_zoneid
-    evaluate_target_health = true
-  }
-
-  depends_on = [kubernetes_ingress_v1.grafana_ingress, time_sleep.wait_for_monitoring_ingress]
-}
-
-
-resource "aws_route53_record" "prometheus" {
-  count = local.deploy_monitoring ? 1 : 0
-
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "prometheus.${var.app_subdomain}.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = kubernetes_ingress_v1.prometheus_ingress[0].status[0].load_balancer[0].ingress[0].hostname
-    zone_id                = var.aws_alb_zoneid
-    evaluate_target_health = true
-  }
-
-  depends_on = [kubernetes_ingress_v1.prometheus_ingress, time_sleep.wait_for_monitoring_ingress]
-}
