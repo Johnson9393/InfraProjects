@@ -65,6 +65,7 @@ resource "kubernetes_manifest" "external_secrets" {
 
   depends_on = [
     kubernetes_namespace_v1.shopsphere,
-    kubernetes_manifest.cluster_secret_store
+    kubernetes_manifest.cluster_secret_store,
+    aws_secretsmanager_secret_version.shopsphere,
   ]
 }

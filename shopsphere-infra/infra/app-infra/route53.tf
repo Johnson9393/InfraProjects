@@ -6,38 +6,18 @@ data "aws_route53_zone" "main" {
   private_zone = false
 }
 
-# Wait for AWS Load Balancer Controller to populate
-# the ALB hostname in Kubernetes Ingress status.
-resource "time_sleep" "wait_for_service_ingress" {
-  for_each = local.ingress_services
-
-  depends_on      = [kubernetes_ingress_v1.service]
-  create_duration = "180s"
-}
-
-# Read the Ingress resource to obtain its ALB hostname.
-data "kubernetes_ingress_v1" "service" {
-  for_each = local.ingress_services
-
-  metadata {
-    name      = "${each.key}-ingress"
-    namespace = each.value.namespace
-  }
-
-  depends_on = [time_sleep.wait_for_service_ingress]
-}
-
-# Retrieve the ALB created by the AWS Load Balancer Controller.
+# Shared ALB already exists from k8-services (same Name/ManagedBy tags
+# and group.name). Do not read Kubernetes Ingress status — those
+# backends do not exist until Argo CD deploys the app.
 data "aws_lb" "ingress" {
-  tags = {
-    Name        = "${var.app_subdomain}-ingress"
-    ManagedBy   = "Terraform"
-  }
+  count = length(local.ingress_services) > 0 ? 1 : 0
 
-  depends_on = [kubernetes_ingress_v1.service]
+  tags = {
+    Name      = "${var.app_subdomain}-ingress"
+    ManagedBy = "Terraform"
+  }
 }
 
-# Create Route 53 alias records pointing to the ALB.
 resource "aws_route53_record" "service" {
   for_each = local.ingress_services
 
@@ -46,10 +26,10 @@ resource "aws_route53_record" "service" {
   type    = "A"
 
   alias {
-    name = data.kubernetes_ingress_v1.service[each.key].status[0].load_balancer[0].ingress[0].hostname
-    zone_id = data.aws_lb.ingress.zone_id
-    evaluate_target_health = true
+    name                   = data.aws_lb.ingress[0].dns_name
+    zone_id                = data.aws_lb.ingress[0].zone_id
+    evaluate_target_health = false
   }
 
-  depends_on = [data.kubernetes_ingress_v1.service]
+  depends_on = [kubernetes_ingress_v1.service]
 }

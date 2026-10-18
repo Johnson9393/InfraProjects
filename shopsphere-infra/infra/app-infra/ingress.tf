@@ -25,12 +25,9 @@ resource "kubernetes_ingress_v1" "service" {
     }
   }
 
-  wait_for_load_balancer = true
-
-  timeouts {
-    create = "10m"
-    delete = "10m"
-  }
+  # App Services (frontend, api-gateway) are created later by Argo CD.
+  # Waiting for ADDRESS here times out on a first apply.
+  wait_for_load_balancer = false
 
   spec {
     ingress_class_name = var.ingress_class_name

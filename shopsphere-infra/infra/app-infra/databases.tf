@@ -11,14 +11,15 @@
 # -----------------------------------------------------------------------------
 
 # Wait for External Secrets Operator to sync AWS Secrets Manager values
-# into Kubernetes Secrets before CNPG reads them.
+# into Kubernetes Secrets before CNPG, Redis, and RabbitMQ read them.
 resource "time_sleep" "wait_for_cnpg_credentials" {
-  count = var.enable_eso_secrets && length(local.cnpg_clusters_effective) > 0 ? 1 : 0
+  count = var.enable_eso_secrets ? 1 : 0
 
-  create_duration = "45s"
+  create_duration = "180s"
 
   depends_on = [
     kubernetes_manifest.external_secrets,
+    aws_secretsmanager_secret_version.shopsphere,
   ]
 }
 
@@ -238,6 +239,8 @@ resource "kubernetes_deployment_v1" "redis" {
       }
     }
   }
+
+  wait_for_rollout = false
 
   depends_on = [
     data.kubernetes_secret_v1.redis_credentials
