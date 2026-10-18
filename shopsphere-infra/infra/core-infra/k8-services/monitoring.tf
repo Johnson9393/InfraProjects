@@ -23,7 +23,8 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
   chart      = "kube-prometheus-stack"
   namespace  = kubernetes_namespace_v1.monitoring[0].metadata[0].name
   version    = "70.0.0"
-  timeout    = 600
+  wait       = true
+  timeout    = 900
 
   values = [
     yamlencode({
@@ -31,12 +32,12 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
         prometheusSpec = {
           resources = {
             requests = {
-              cpu    = "500m"
-              memory = "1Gi"
+              cpu    = "100m"
+              memory = "400Mi"
             }
             limits = {
-              cpu    = "1000m"
-              memory = "2Gi"
+              cpu    = "500m"
+              memory = "1Gi"
             }
           }
           retention                       = "15d"
@@ -74,12 +75,12 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
 
         resources = {
           requests = {
-            cpu    = "250m"
-            memory = "512Mi"
+            cpu    = "50m"
+            memory = "128Mi"
           }
           limits = {
-            cpu    = "500m"
-            memory = "1Gi"
+            cpu    = "250m"
+            memory = "256Mi"
           }
         }
 
