@@ -136,7 +136,7 @@ resource "aws_route53_record" "grafana" {
   type    = "A"
 
   alias {
-    name = kubernetes_ingress_v1.grafana_ingress[0].status[0].load_balancer[0].ingress[0].hostname
+    name                   = kubernetes_ingress_v1.grafana_ingress[0].status[0].load_balancer[0].ingress[0].hostname
     zone_id                = var.aws_alb_zoneid
     evaluate_target_health = true
   }
@@ -153,7 +153,7 @@ resource "aws_route53_record" "prometheus" {
   type    = "A"
 
   alias {
-    name = kubernetes_ingress_v1.prometheus_ingress[0].status[0].load_balancer[0].ingress[0].hostname
+    name                   = kubernetes_ingress_v1.prometheus_ingress[0].status[0].load_balancer[0].ingress[0].hostname
     zone_id                = var.aws_alb_zoneid
     evaluate_target_health = true
   }

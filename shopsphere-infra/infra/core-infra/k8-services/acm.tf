@@ -4,7 +4,7 @@ data "aws_route53_zone" "main" {
 }
 
 resource "aws_acm_certificate" "env" {
-  count = local.deploy_acm ? 1 : 0
+  count             = local.deploy_acm ? 1 : 0
   domain_name       = "*.${local.env_dns_suffix}"
   validation_method = "DNS"
 

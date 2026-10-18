@@ -39,8 +39,8 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
               memory = "2Gi"
             }
           }
-          retention                     = "15d"
-          retentionSize                 = "10GB"
+          retention                       = "15d"
+          retentionSize                   = "10GB"
           serviceMonitorSelector          = {}
           serviceMonitorNamespaceSelector = {}
           podMonitorSelector              = {}

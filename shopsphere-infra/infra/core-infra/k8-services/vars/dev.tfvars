@@ -2,8 +2,8 @@
 # General
 # ============================================================================
 
-region = "us-east-1"
-project    = "shopsphere"
-env        = "dev"
+region           = "us-east-1"
+project          = "shopsphere"
+env              = "dev"
 eks_cluster_name = "shopsphere"
 
