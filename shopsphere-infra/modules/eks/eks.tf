@@ -65,8 +65,8 @@ resource "aws_eks_access_entry" "cluster_admins" {
 resource "aws_eks_access_policy_association" "cluster_admins" {
   for_each = toset(var.cluster_admin_role_arns)
 
-  cluster_name  = aws_eks_cluster.main.name
-  principal_arn = each.value
+  cluster_name  = aws_eks_access_entry.cluster_admins[each.value].cluster_name
+  principal_arn = aws_eks_access_entry.cluster_admins[each.value].principal_arn
 
   policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
