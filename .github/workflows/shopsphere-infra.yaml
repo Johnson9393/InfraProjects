@@ -220,6 +220,77 @@ jobs:
         run: |
           set -euo pipefail
 
+          CLUSTER_NAME="${TF_ENV}-shopsphere"
+
+          # The shared ALB is created by the AWS Load Balancer Controller, not
+          # Terraform. If Helm removes the controller first, the ALB stays up
+          # with the ACM cert attached and terraform destroy hangs on ACM.
+          delete_leftover_albs() {
+            echo "Looking for leftover ALBs tagged elbv2.k8s.aws/cluster=${CLUSTER_NAME}"
+
+            local arns
+            arns="$(
+              aws elbv2 describe-load-balancers --region "${AWS_REGION}" \
+                --query 'LoadBalancers[].LoadBalancerArn' --output text 2>/dev/null || true
+            )"
+
+            if [[ -z "${arns}" || "${arns}" == "None" ]]; then
+              echo "No load balancers in the account region."
+              return 0
+            fi
+
+            local arn cluster_tag
+            for arn in ${arns}; do
+              cluster_tag="$(
+                aws elbv2 describe-tags --region "${AWS_REGION}" --resource-arns "${arn}" \
+                  --query "TagDescriptions[0].Tags[?Key=='elbv2.k8s.aws/cluster'].Value | [0]" \
+                  --output text 2>/dev/null || true
+              )"
+              if [[ "${cluster_tag}" == "${CLUSTER_NAME}" ]]; then
+                echo "Deleting leftover ALB ${arn}"
+                aws elbv2 delete-load-balancer --region "${AWS_REGION}" --load-balancer-arn "${arn}"
+              fi
+            done
+          }
+
+          release_acm_from_albs() {
+            echo "Deleting Ingress objects so the controller can drop the ALB (if it is still running)"
+            aws eks update-kubeconfig \
+              --name "${CLUSTER_NAME}" \
+              --region "${AWS_REGION}" || return 0
+
+            kubectl delete ingress --all -A --ignore-not-found || true
+
+            local i leftover
+            for i in $(seq 1 30); do
+              leftover=0
+              local arn cluster_tag
+              for arn in $(
+                aws elbv2 describe-load-balancers --region "${AWS_REGION}" \
+                  --query 'LoadBalancers[].LoadBalancerArn' --output text 2>/dev/null || true
+              ); do
+                [[ -z "${arn}" || "${arn}" == "None" ]] && continue
+                cluster_tag="$(
+                  aws elbv2 describe-tags --region "${AWS_REGION}" --resource-arns "${arn}" \
+                    --query "TagDescriptions[0].Tags[?Key=='elbv2.k8s.aws/cluster'].Value | [0]" \
+                    --output text 2>/dev/null || true
+                )"
+                if [[ "${cluster_tag}" == "${CLUSTER_NAME}" ]]; then
+                  leftover=$((leftover + 1))
+                fi
+              done
+              if [[ "${leftover}" -eq 0 ]]; then
+                echo "No cluster ALBs left."
+                return 0
+              fi
+              echo "Cluster ALBs still present (${leftover}), waiting (${i}/30)..."
+              sleep 20
+            done
+
+            echo "Cluster ALBs still present after wait; force-deleting."
+            delete_leftover_albs
+          }
+
           destroy_stack() {
             local dir="$1"
 
@@ -237,5 +308,8 @@ jobs:
           }
 
           destroy_stack shopsphere-infra/infra/app-infra
+          release_acm_from_albs || true
+          delete_leftover_albs || true
           destroy_stack shopsphere-infra/infra/core-infra/k8-services
+          delete_leftover_albs || true
           destroy_stack shopsphere-infra/infra/core-infra/cluster
