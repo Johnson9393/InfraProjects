@@ -51,6 +51,7 @@ resource "helm_release" "cnpg" {
   timeout = 600
 
   depends_on = [
-    kubernetes_namespace_v1.cnpg
+    kubernetes_namespace_v1.cnpg,
+    time_sleep.wait_alb_webhook,
   ]
 }

@@ -60,6 +60,8 @@ resource "helm_release" "aws_load_balancer_controller" {
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
   version    = "1.11.0"
+  wait       = true
+  timeout    = 600
 
   set = [
     {
@@ -91,4 +93,10 @@ resource "helm_release" "aws_load_balancer_controller" {
   depends_on = [
     aws_iam_role_policy_attachment.aws_load_balancer_controller
   ]
+}
+
+
+resource "time_sleep" "wait_alb_webhook" {
+  depends_on      = [helm_release.aws_load_balancer_controller]
+  create_duration = "60s"
 }

@@ -32,4 +32,6 @@ resource "helm_release" "eso" {
 
   # Waits for the Helm installation to finish.
   timeout = 600
+
+  depends_on = [time_sleep.wait_alb_webhook]
 }

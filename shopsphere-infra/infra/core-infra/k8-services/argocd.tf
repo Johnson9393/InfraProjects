@@ -27,6 +27,11 @@ resource "helm_release" "argocd" {
       value = "true"
     }
   ]
+
+  wait    = true
+  timeout = 600
+
+  depends_on = [time_sleep.wait_alb_webhook]
 }
 
 resource "kubernetes_ingress_v1" "argocd_ingress_tls" {

@@ -183,5 +183,6 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
 
   depends_on = [
     kubernetes_namespace_v1.monitoring,
+    time_sleep.wait_alb_webhook
   ]
 }
