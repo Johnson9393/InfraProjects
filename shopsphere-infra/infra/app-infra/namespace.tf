@@ -1,12 +1,10 @@
 # Creates the ShopSphere namespace for each configured environment.
 resource "kubernetes_namespace_v1" "shopsphere" {
-  for_each = var.environments
-
   metadata {
-    name = "shopsphere-${each.key}"
+    name = local.cluster_namespace
 
     labels = {
-      environment                    = each.key
+      environment                    = var.env
       app                            = "shopsphere"
       "app.kubernetes.io/managed-by" = "terraform"
     }

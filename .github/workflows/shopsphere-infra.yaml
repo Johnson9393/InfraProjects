@@ -4,6 +4,15 @@ name: ShopSphere Infrastructure
 on:
   workflow_dispatch:
     inputs:
+      action:
+        description: "apply one stack, or destroy all ShopSphere infra (not OIDC, not state bucket)"
+        type: choice
+        required: true
+        default: apply
+        options:
+          - apply
+          - destroy
+
       environment:
         description: "Environment to manage"
         type: choice
@@ -13,7 +22,7 @@ on:
           - prod
 
       infra_path:
-        description: "Terraform directory to manage"
+        description: "Terraform directory (apply only; ignored on destroy)"
         type: choice
         required: true
         options:
@@ -31,10 +40,16 @@ env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_ENV: ${{ inputs.environment }}
+  TF_VAR_razorpay_key_id: ${{ secrets.RAZORPAY_KEY_ID }}
+  TF_VAR_razorpay_key_secret: ${{ secrets.RAZORPAY_KEY_SECRET }}
+  TF_VAR_razorpay_webhook_secret: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
+  TF_VAR_aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  TF_VAR_aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   terraform-plan:
     name: Terraform Plan
+    if: inputs.action == 'apply'
     runs-on: ubuntu-latest
 
     steps:
@@ -59,6 +74,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
       - name: Check environment configuration
         working-directory: ${{ inputs.infra_path }}
@@ -110,6 +126,7 @@ jobs:
 
   terraform-apply:
     name: Terraform Apply
+    if: inputs.action == 'apply'
     needs: terraform-plan
     runs-on: ubuntu-latest
 
@@ -132,6 +149,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
       - name: Download Reviewed Plan
         uses: actions/download-artifact@v4
@@ -149,3 +167,75 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ inputs.infra_path }}
         run: terraform apply -input=false tfplan
+
+  terraform-destroy:
+    name: Terraform Destroy
+    if: inputs.action == 'destroy'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure workflow runs from main
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Run this workflow from the main branch."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.environment == 'dev' && vars.AWS_TERRAFORM_ROLE_ARN_DEV || vars.AWS_TERRAFORM_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Remove Argo Application so it does not recreate workloads
+        continue-on-error: true
+        shell: bash
+        run: |
+          aws eks update-kubeconfig \
+            --name "${TF_ENV}-shopsphere" \
+            --region "${AWS_REGION}"
+
+          kubectl delete application shopsphere-dev \
+            -n "${TF_ENV}-argocd" \
+            --ignore-not-found
+
+      - name: Destroy ShopSphere stacks in reverse order
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          destroy_stack() {
+            local dir="$1"
+
+            test -s "${dir}/vars/${TF_ENV}.tfbackend"
+            test -s "${dir}/vars/${TF_ENV}.tfvars"
+
+            terraform -chdir="${dir}" init \
+              -input=false \
+              -backend-config="vars/${TF_ENV}.tfbackend"
+
+            terraform -chdir="${dir}" destroy \
+              -input=false \
+              -auto-approve \
+              -var-file="vars/${TF_ENV}.tfvars"
+          }
+
+          destroy_stack shopsphere-infra/infra/app-infra
+          destroy_stack shopsphere-infra/infra/core-infra/k8-services
+          destroy_stack shopsphere-infra/infra/core-infra/cluster

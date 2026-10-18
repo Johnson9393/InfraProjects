@@ -234,7 +234,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "shopsphere.fullname" . }}-api-gateway
+  name: api-gateway
   namespace: {{ include "shopsphere.namespace" . }}
   labels:
     {{- include "shopsphere.commonLabels" . | nindent 4 }}

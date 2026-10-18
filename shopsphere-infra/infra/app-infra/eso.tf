@@ -1,5 +1,6 @@
 
 # Creates the ClusterSecretStore only when ESO integration is enabled.
+# AWS Secrets Manager, this region.” Cluster-wide. No passwords in it — just where to talk. The ESO operator uses Pod Identity to actually call AWS
 resource "kubernetes_manifest" "cluster_secret_store" {
   count = var.enable_eso_secrets ? 1 : 0
 
@@ -22,7 +23,8 @@ resource "kubernetes_manifest" "cluster_secret_store" {
   }
 }
 
-# Creates Kubernetes Secrets from AWS Secrets Manager values when enabled.
+# It writes Kubernetes Secrets from AWS Secrets Manager values when enabled.
+# one per app secret. “Take AWS key dev/product-db-credentials, fields username/password, write a Kubernetes Secret named product-db-credentials in shopsphere-dev.” Refresh every hour.
 resource "kubernetes_manifest" "external_secrets" {
   for_each = var.enable_eso_secrets ? local.external_secret_targets : {}
 

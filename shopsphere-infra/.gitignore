@@ -32,6 +32,7 @@ terraform.rc
 
 # Allow non-sensitive example tfvars
 !*.example.tfvars
+!**/vars/*.tfvars
 
 
 # ============================================================================

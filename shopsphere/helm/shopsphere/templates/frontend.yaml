@@ -62,7 +62,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "shopsphere.fullname" . }}-frontend
+  name: frontend
   namespace: {{ include "shopsphere.namespace" . }}
   labels:
     {{- include "shopsphere.commonLabels" . | nindent 4 }}

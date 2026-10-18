@@ -20,14 +20,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  AWS_ROLE_ARN: arn:aws:iam::023192525105:role/github-ecr-role
+  AWS_ROLE_ARN: ${{ vars.AWS_ECR_ROLE_ARN }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    environment:
-      name: ${{ inputs.environment || 'dev' }}
 
     permissions:
       contents: read
@@ -115,5 +112,5 @@ jobs:
             --push \
             --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}" \
             --cache-from "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache" \
-            --cache-to "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache",mode=max,image-manifest=true,oci-mediatypes=true" \
+            --cache-to "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" \
             "$SERVICE_CONTEXT"

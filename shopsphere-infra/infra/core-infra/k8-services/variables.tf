@@ -131,3 +131,11 @@ variable "enable_monitoring" {
   default     = null
   nullable    = true
 }
+
+variable "eso_chart_version" {
+  description = "External Secrets Operator Helm chart version."
+  type        = string
+  default     = "2.13.0"
+}
+
+

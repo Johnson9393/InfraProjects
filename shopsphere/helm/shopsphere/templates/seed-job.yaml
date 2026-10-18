@@ -47,7 +47,7 @@ spec:
             - |
               set -eu
 
-              url="http://{{ include "shopsphere.fullname" . }}-api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local/api/health/product-service"
+              url="http://api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local/api/health/product-service"
 
               echo "Waiting for $url ..."
 
@@ -76,7 +76,7 @@ spec:
           # API Gateway is the entry point used by the seed process.
           env:
             - name: API_URL
-              value: "http://{{ include "shopsphere.fullname" . }}-api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local"
+              value: "http://api-gateway.{{ include "shopsphere.namespace" . }}.svc.cluster.local"
 
             - name: PREFLIGHT_ATTEMPTS
               value: {{ .Values.seedJob.waitAttempts | quote }}

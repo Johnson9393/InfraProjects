@@ -1,3 +1,4 @@
+# charts are used as a metadata for our whole application
 apiVersion: v2
 name: shopsphere
 description: Helm chart for the ShopSphere microservices platform on Amazon EKS

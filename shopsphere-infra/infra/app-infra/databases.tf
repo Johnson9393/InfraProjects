@@ -10,6 +10,18 @@
 # Production PostgreSQL will be configured separately using RDS.
 # -----------------------------------------------------------------------------
 
+# Wait for External Secrets Operator to sync AWS Secrets Manager values
+# into Kubernetes Secrets before CNPG reads them.
+resource "time_sleep" "wait_for_cnpg_credentials" {
+  count = var.enable_eso_secrets && length(local.cnpg_clusters_effective) > 0 ? 1 : 0
+
+  create_duration = "45s"
+
+  depends_on = [
+    kubernetes_manifest.external_secrets,
+  ]
+}
+
 # Read the ESO-managed credentials required by each PostgreSQL cluster.
 data "kubernetes_secret_v1" "cnpg_credentials" {
   for_each = local.cnpg_clusters_effective
@@ -20,9 +32,10 @@ data "kubernetes_secret_v1" "cnpg_credentials" {
   }
 
   depends_on = [
-    data.kubernetes_secret_v1.cnpg_credentials
+    kubernetes_namespace_v1.shopsphere,
+    kubernetes_manifest.external_secrets,
+    time_sleep.wait_for_cnpg_credentials,
   ]
-
 }
 
 # Create the PostgreSQL clusters through the CloudNativePG Kubernetes CRD.
@@ -127,26 +140,28 @@ resource "kubernetes_manifest" "cnpg_cluster" {
 # ------------------------------------------------------------------------------
 
 data "kubernetes_secret_v1" "redis_credentials" {
-  for_each = var.redis_enabled ? local.cnpg_clusters_effective : {}
+  count = var.redis_enabled ? 1 : 0
   metadata {
     name      = "redis-credentials"
-    namespace = each.value.namespace
+    namespace = local.cluster_namespace
   }
 
   depends_on = [
-    kubernetes_namespace_v1.shopsphere
+    kubernetes_namespace_v1.shopsphere,
+    kubernetes_manifest.external_secrets,
+    time_sleep.wait_for_cnpg_credentials
   ]
 }
 
 resource "kubernetes_deployment_v1" "redis" {
-  for_each = var.redis_enabled ? local.cnpg_clusters_effective : {}
+  count = var.redis_enabled ? 1 : 0
   metadata {
     name      = "redis"
-    namespace = each.value.namespace
+    namespace = local.cluster_namespace
 
     labels = {
       app                            = "redis"
-      environment                    = each.value.environment
+      environment                    = var.env
       "app.kubernetes.io/managed-by" = "terraform"
       "app.kubernetes.io/part-of"    = "shopsphere"
     }
@@ -185,7 +200,7 @@ resource "kubernetes_deployment_v1" "redis" {
 
             value_from {
               secret_key_ref {
-                name = data.kubernetes_secret_v1.redis_credentials.metadata[0].name
+                name = data.kubernetes_secret_v1.redis_credentials[0].metadata[0].name
                 key  = "password"
               }
             }
@@ -230,10 +245,10 @@ resource "kubernetes_deployment_v1" "redis" {
 }
 
 resource "kubernetes_service_v1" "redis" {
-  for_each = var.redis_enabled ? local.cnpg_clusters_effective : {}
+  count = var.redis_enabled ? 1 : 0
   metadata {
     name      = "redis"
-    namespace = each.value.namespace
+    namespace = local.cluster_namespace
 
     labels = {
       app = "redis"
@@ -265,20 +280,22 @@ resource "kubernetes_service_v1" "redis" {
 # ------------------------------------------------------------------------------
 
 data "kubernetes_secret_v1" "rabbitmq_credentials" {
-  for_each = var.rabbitmq_enabled ? local.cnpg_clusters_effective : {}
+  count = var.rabbitmq_enabled ? 1 : 0
 
   metadata {
     name      = "rabbitmq-credentials"
-    namespace = each.value.namespace
+    namespace = local.cluster_namespace
   }
 
   depends_on = [
-    kubernetes_namespace_v1.shopsphere
+    kubernetes_namespace_v1.shopsphere,
+    kubernetes_manifest.external_secrets,
+    time_sleep.wait_for_cnpg_credentials
   ]
 }
 
 resource "kubernetes_manifest" "rabbitmq" {
-  for_each = var.rabbitmq_enabled ? local.cnpg_clusters_effective : {}
+  count = var.rabbitmq_enabled ? 1 : 0
 
   manifest = {
     apiVersion = "apps/v1"
@@ -286,11 +303,11 @@ resource "kubernetes_manifest" "rabbitmq" {
 
     metadata = {
       name      = "rabbitmq"
-      namespace = each.value.namespace
+      namespace = local.cluster_namespace
 
       labels = {
         app                            = "rabbitmq"
-        environment                    = each.key
+        environment                    = var.env
         "app.kubernetes.io/managed-by" = "terraform"
         "app.kubernetes.io/part-of"    = "shopsphere"
       }
@@ -330,7 +347,7 @@ resource "kubernetes_manifest" "rabbitmq" {
                   name = "RABBITMQ_DEFAULT_USER"
                   valueFrom = {
                     secretKeyRef = {
-                      name = data.kubernetes_secret_v1.rabbitmq_credentials[each.key].metadata[0].name
+                      name = data.kubernetes_secret_v1.rabbitmq_credentials[0].metadata[0].name
                       key  = "username"
                     }
                   }
@@ -339,7 +356,7 @@ resource "kubernetes_manifest" "rabbitmq" {
                   name = "RABBITMQ_DEFAULT_PASS"
                   valueFrom = {
                     secretKeyRef = {
-                      name = data.kubernetes_secret_v1.rabbitmq_credentials[each.key].metadata[0].name
+                      name = data.kubernetes_secret_v1.rabbitmq_credentials[0].metadata[0].name
                       key  = "password"
                     }
                   }
@@ -415,15 +432,15 @@ resource "kubernetes_manifest" "rabbitmq" {
 }
 
 resource "kubernetes_service_v1" "rabbitmq" {
-  for_each = var.rabbitmq_enabled ? local.cnpg_clusters_effective  : {}
+  count = var.rabbitmq_enabled ? 1 : 0
 
   metadata {
     name      = "rabbitmq"
-    namespace = each.value.namespace
+    namespace = local.cluster_namespace
 
     labels = {
       app                            = "rabbitmq"
-      environment                    = each.key
+      environment                    = var.env
       "app.kubernetes.io/managed-by" = "terraform"
       "app.kubernetes.io/part-of"    = "shopsphere"
     }

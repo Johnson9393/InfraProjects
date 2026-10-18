@@ -2,6 +2,8 @@
 # ShopSphere - CloudNativePG Operator
 # ============================================================================
 
+# CNPG knows how to turn a Cluster CR into Postgres pods
+
 resource "kubernetes_namespace_v1" "cnpg" {
   metadata {
     name = local.cnpg_namespace

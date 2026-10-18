@@ -6,10 +6,12 @@ resource "kubernetes_namespace_v1" "eso" {
 }
 
 # Installs the External Secrets Operator and its required CRDs using Helm.
+# knows how to turn an ExternalSecret into a Kubernetes Secret
 resource "helm_release" "eso" {
   name       = "eso"
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
+  version = var.eso_chart_version
   namespace  = kubernetes_namespace_v1.eso.metadata[0].name
 
   # Enables the CRDs used by ClusterSecretStore and ExternalSecret.

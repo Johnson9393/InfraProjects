@@ -9,47 +9,47 @@ global:
 services:
   productService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-product-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-product-service
       tag: "1.0.0"
 
   userService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-user-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-user-service
       tag: "1.0.0"
 
   cartService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-cart-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-cart-service
       tag: "1.0.0"
 
   orderService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-order-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-order-service
       tag: "1.0.0"
 
   paymentService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-payment-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-payment-service
       tag: "1.0.0"
 
   notificationService:
     image:
-      repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-notification-service
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-notification-service
       tag: "1.0.0"
 
 # Dev ECR image repositories for the gateway and frontend.
 apiGateway:
   image:
-    repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-api-gateway
+    repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-api-gateway
     tag: "1.0.0"
 
 frontend:
   image:
-    repository: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-frontend
+    repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-frontend
     tag: "1.0.0"
 
 seedJob:
-  image: <DEV_ECR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed-job:1.0.0
+  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed:1.0.0
 
 # Dev ALB configuration.
 ingress:

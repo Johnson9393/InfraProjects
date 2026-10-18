@@ -62,23 +62,24 @@ spec:
             httpGet:
               path: {{ .Values.services.productService.probes.readiness.path }}
               port: {{ .Values.services.productService.probes.readiness.port }}
-              initialDelaySeconds: 10
-              periodSeconds: 5
+            initialDelaySeconds: 10
+            periodSeconds: 5
 
           # Liveness probe controls whether Kubernetes should restart the container.
           livenessProbe:
             httpGet:
               path: {{ .Values.services.productService.probes.liveness.path }}
               port: {{ .Values.services.productService.probes.liveness.port }}
-              initialDelaySeconds: 20
-              periodSeconds: 10
+            initialDelaySeconds: 20
+            periodSeconds: 10
 
 ---
 # Product Service provides stable internal networking for the product-service pods.
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "shopsphere.fullname" . }}-product-service
+  name: product-service
+  namespace: {{ include "shopsphere.namespace" . }}
   labels:
     {{- include "shopsphere.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: product-service
