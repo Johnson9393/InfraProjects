@@ -10,7 +10,8 @@ resource "helm_release" "loki" {
   chart      = "loki-stack"
   namespace  = kubernetes_namespace_v1.monitoring[0].metadata[0].name
   version    = "2.10.2"
-  timeout    = 600
+  timeout    = 900
+  wait       = true
 
   values = [
     yamlencode({
@@ -33,8 +34,8 @@ resource "helm_release" "loki" {
 
         resources = {
           requests = {
-            cpu    = "200m"
-            memory = "512Mi"
+            cpu    = "100m"
+            memory = "256Mi"
           }
           limits = {
             cpu    = "500m"
