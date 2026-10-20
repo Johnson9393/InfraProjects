@@ -55,6 +55,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Ensure workflow runs from main
         shell: bash
@@ -123,6 +125,7 @@ jobs:
             ${{ inputs.infra_path }}/tfplan.txt
           if-no-files-found: error
           retention-days: 5
+          overwrite: true
 
   terraform-apply:
     name: Terraform Apply
@@ -138,6 +141,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -179,6 +184,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Ensure workflow runs from main
         shell: bash
