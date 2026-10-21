@@ -114,3 +114,38 @@ jobs:
             --cache-from "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache" \
             --cache-to "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" \
             "$SERVICE_CONTEXT"
+  
+  update-dev-image-tags:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Write new image tags into env values
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          APP_ENV: ${{ inputs.environment || 'dev' }}
+        run: |
+          FILE="shopsphere/environments/${APP_ENV}/values.yaml"
+
+          sed -i -E "s/tag: \"[a-f0-9]{40}\"/tag: \"${IMAGE_TAG}\"/" "$FILE"
+          sed -i -E "s|(${APP_ENV}-shopsphere-seed:)[a-f0-9]{40}|\1${IMAGE_TAG}|" "$FILE"
+
+      - name: Commit and push image tags
+        env:
+          APP_ENV: ${{ inputs.environment || 'dev' }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "shopsphere/environments/${APP_ENV}/values.yaml"
+          if git diff --staged --quiet; then
+            echo "No tag changes"
+            exit 0
+          fi
+          git commit -m "chore: bump ${APP_ENV} image tags to ${IMAGE_TAG}"
+          git push
