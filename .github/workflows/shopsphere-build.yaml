@@ -29,6 +29,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: write
 
     strategy:
       fail-fast: false
@@ -100,6 +101,7 @@ jobs:
         env:
           SERVICE_CONTEXT: ${{ matrix.context }}
           ECR_SUFFIX: ${{ matrix.ecr_suffix }}
+          CACHE_SCOPE: ${{ matrix.name }}
         run: |
           ECR_REGISTRY=$(aws sts get-caller-identity \
             --query Account \
@@ -111,8 +113,8 @@ jobs:
             --platform linux/amd64 \
             --push \
             --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:${GITHUB_SHA}" \
-            --cache-from "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache" \
-            --cache-to "type=registry,ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true" \
+            --cache-from "type=gha,scope=${CACHE_SCOPE}" \
+            --cache-to "type=gha,mode=max,scope=${CACHE_SCOPE}" \
             "$SERVICE_CONTEXT"
   
   update-dev-image-tags:
