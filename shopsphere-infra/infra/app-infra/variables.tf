@@ -177,7 +177,7 @@ variable "cnpg_storage" {
 variable "cnpg_storage_class" {
   description = "StorageClass used for PostgreSQL persistent volumes."
   type        = string
-  default = "gp2"
+  default     = "gp2"
 }
 
 variable "storage_class" {
