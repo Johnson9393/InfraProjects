@@ -10,46 +10,46 @@ services:
   productService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-product-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
   userService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-user-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
   cartService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-cart-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
   orderService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-order-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
   paymentService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-payment-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
   notificationService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-notification-service
-      tag: "1.0.0"
+      tag: "56409973b446bad6938495d66373c795da64b77a"
 
 # Dev ECR image repositories for the gateway and frontend.
 apiGateway:
   image:
     repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-api-gateway
-    tag: "1.0.0"
+    tag: "56409973b446bad6938495d66373c795da64b77a"
 
 frontend:
   image:
     repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-frontend
-    tag: "1.0.0"
+    tag: "56409973b446bad6938495d66373c795da64b77a"
 
 seedJob:
-  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed:1.0.0
+  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed:56409973b446bad6938495d66373c795da64b77a
 
 # Dev ALB configuration.
 ingress:
