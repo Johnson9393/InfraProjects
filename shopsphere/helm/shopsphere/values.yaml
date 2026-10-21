@@ -391,10 +391,10 @@ apiGateway:
   # Kubernetes uses these endpoints to determine whether the gateway is healthy.
   probes:
     readiness:
-      path: /
+      path: /health
       port: 80
     liveness:
-      path: /
+      path: /health
       port: 80
 
 # Frontend configuration for the ShopSphere web application.
