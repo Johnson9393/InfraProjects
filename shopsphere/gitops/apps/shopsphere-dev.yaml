@@ -5,13 +5,18 @@ metadata:
   namespace: dev-argocd
 spec:
   project: default
-  source:
-    repoURL: https://github.com/Johnson9393/InfraProjects.git
-    targetRevision: main
-    path: shopsphere/helm/shopsphere
-    helm:
-      valueFiles:
-        - ../../environments/dev/values.yaml
+  sources:
+    - repoURL: https://github.com/Johnson9393/InfraProjects.git
+      targetRevision: main
+      ref: values
+    
+    - repoURL: https://github.com/Johnson9393/InfraProjects.git
+      targetRevision: main
+      path: shopsphere/helm/shopsphere
+      helm:
+        valueFiles:
+          - $values/shopsphere/environments/dev/values.yaml
+    
   destination:
     server: https://kubernetes.default.svc
     namespace: shopsphere-dev
