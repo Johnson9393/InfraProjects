@@ -10,46 +10,46 @@ services:
   productService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-product-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
   userService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-user-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
   cartService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-cart-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
   orderService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-order-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
   paymentService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-payment-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
   notificationService:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-notification-service
-      tag: "56409973b446bad6938495d66373c795da64b77a"
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
 # Dev ECR image repositories for the gateway and frontend.
 apiGateway:
   image:
     repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-api-gateway
-    tag: "56409973b446bad6938495d66373c795da64b77a"
+    tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
 frontend:
   image:
     repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-frontend
-    tag: "56409973b446bad6938495d66373c795da64b77a"
+    tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
 
 seedJob:
-  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed:56409973b446bad6938495d66373c795da64b77a
+  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/dev-shopsphere-seed:fa8888ad546aa91aceda97f03963e1758267fe35
 
 # Dev ALB configuration.
 ingress:
