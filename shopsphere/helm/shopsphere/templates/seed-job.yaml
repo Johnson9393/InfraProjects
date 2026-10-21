@@ -13,7 +13,7 @@ metadata:
   # If you have multiple Helm hooks for different purposes, hook-weight determines their execution order.
   # delete-policy ensures the seed job is removed before the next installation or upgrade.
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook": post-install
     "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": before-hook-creation
 
