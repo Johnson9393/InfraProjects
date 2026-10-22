@@ -13,7 +13,7 @@ data "aws_lb" "ingress" {
   count = length(local.ingress_services) > 0 ? 1 : 0
 
   tags = {
-    Name      = "${var.app_subdomain}-ingress"
+    Name      = "${var.env}-${var.app_subdomain}-ingress"
     ManagedBy = "Terraform"
   }
 }

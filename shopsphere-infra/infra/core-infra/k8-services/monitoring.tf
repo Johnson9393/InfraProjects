@@ -1,5 +1,5 @@
-# Monitoring stack — deployed on dev only (see locals.deploy_monitoring).
-# Prod uses dev Grafana/Prometheus URLs (grafana.*, prometheus.* on shared ALB).
+# Prometheus + Grafana on this cluster (dev or prod).
+# Public URLs are grafana.<env>.infralabx.space and prometheus.<env>.infralabx.space.
 
 resource "kubernetes_namespace_v1" "monitoring" {
   count = local.deploy_monitoring ? 1 : 0
@@ -47,12 +47,12 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
           podMonitorSelector              = {}
           podMonitorNamespaceSelector     = {}
           additionalScrapeConfigs         = []
-          externalUrl                     = "https://prometheus.${var.app_subdomain}.${var.domain_name}"
+          externalUrl                     = "https://prometheus.${var.env}.${var.domain_name}"
           routePrefix                     = "/"
           storageSpec = {
             volumeClaimTemplate = {
               spec = {
-                storageClassName = "gp2"
+                storageClassName = "gp3"
                 accessModes      = ["ReadWriteOnce"]
                 resources = {
                   requests = {
@@ -86,7 +86,7 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
 
         persistence = {
           enabled          = true
-          storageClassName = "gp2"
+          storageClassName = "gp3"
           accessModes      = ["ReadWriteOnce"]
           size             = "10Gi"
         }
@@ -131,8 +131,8 @@ resource "helm_release" "kube_prometheus_grafana_stack" {
 
         "grafana.ini" = {
           server = {
-            domain              = "grafana.${var.app_subdomain}.${var.domain_name}"
-            root_url            = "https://grafana.${var.app_subdomain}.${var.domain_name}"
+            domain              = "grafana.${var.env}.${var.domain_name}"
+            root_url            = "https://grafana.${var.env}.${var.domain_name}"
             serve_from_sub_path = false
           }
           analytics = {

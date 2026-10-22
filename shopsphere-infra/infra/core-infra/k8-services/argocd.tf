@@ -1,5 +1,5 @@
-# ArgoCD — deployed on dev only (see locals.deploy_argocd). Prod connects to dev ArgoCD.
-
+# Argo CD on this cluster (dev or prod). Host is argocd.<env>.infralabx.space
+# so it matches ACM *.<env>.infralabx.space.
 resource "kubernetes_namespace_v1" "argocd" {
   count = local.deploy_argocd ? 1 : 0
 
@@ -49,7 +49,7 @@ resource "kubernetes_ingress_v1" "argocd_ingress_tls" {
       "alb.ingress.kubernetes.io/healthcheck-path"         = "/"
       "alb.ingress.kubernetes.io/healthcheck-protocol"     = "HTTP"
       "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
-      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.app_subdomain}-ingress"
+      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.env}-${var.app_subdomain}-ingress"
       "alb.ingress.kubernetes.io/group.name"               = local.alb_group_name
     }
   }
@@ -73,12 +73,12 @@ resource "kubernetes_ingress_v1" "argocd_ingress_tls" {
 
     tls {
       hosts = [
-        "argocd.${var.app_subdomain}.${var.domain_name}"
+        "argocd.${var.env}.${var.domain_name}"
       ]
     }
 
     rule {
-      host = "argocd.${var.app_subdomain}.${var.domain_name}"
+      host = "argocd.${var.env}.${var.domain_name}"
 
       http {
         path {

@@ -80,7 +80,7 @@ variable "awsloadbalancercontroller_sa" {
 # ---------------------------------------------------------------------------
 
 variable "platform_env" {
-  description = "Environment where ArgoCD, Vault, and monitoring are deployed (shared by prod)"
+  description = "When enable_argocd / enable_monitoring are null, those stacks install only if env equals this value. Set platform_env to the same as env on each cluster (dev and prod)."
   type        = string
   default     = "dev"
 
@@ -91,7 +91,7 @@ variable "platform_env" {
 }
 
 variable "enable_argocd" {
-  description = "Deploy ArgoCD on this cluster. Defaults to true only when env == platform_env (dev)."
+  description = "Deploy Argo CD on this cluster. Null means install when env == platform_env."
   type        = bool
   default     = null
   nullable    = true
@@ -104,7 +104,7 @@ variable "argocd_chart_version" {
 }
 
 variable "alb_group_name" {
-  description = "Shared ALB group name for ShopSphere ingress resources"
+  description = "ALB Ingress group name for this cluster. Use a different value per env."
   type        = string
   default     = "shopsphere-shared-alb"
 }
@@ -126,7 +126,7 @@ variable "aws_alb_zoneid" {
 # ---------------------------------------------------------------------------
 
 variable "enable_monitoring" {
-  description = "Deploy kube-prometheus-stack + Loki on this cluster. Defaults to true only when env == platform_env (dev)."
+  description = "Deploy kube-prometheus-stack + Loki on this cluster. Null means install when env == platform_env."
   type        = bool
   default     = null
   nullable    = true

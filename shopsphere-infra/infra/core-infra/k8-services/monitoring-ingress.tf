@@ -1,5 +1,6 @@
 #------------------------------------------
-# Prometheus and grafana Ingress Configuration
+# Prometheus and Grafana Ingress
+# Hosts: prometheus|grafana.<env>.infralabx.space (matches ACM *.<env>.infralabx.space)
 #-------------------------------------------
 
 resource "kubernetes_ingress_v1" "prometheus_ingress" {
@@ -17,7 +18,7 @@ resource "kubernetes_ingress_v1" "prometheus_ingress" {
       "alb.ingress.kubernetes.io/healthcheck-path"         = "/-/healthy"
       "alb.ingress.kubernetes.io/healthcheck-protocol"     = "HTTP"
       "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
-      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.app_subdomain}-ingress"
+      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.env}-${var.app_subdomain}-ingress"
       "alb.ingress.kubernetes.io/group.name"               = local.alb_group_name
     }
   }
@@ -33,11 +34,11 @@ resource "kubernetes_ingress_v1" "prometheus_ingress" {
     ingress_class_name = "alb"
 
     tls {
-      hosts = ["prometheus.${var.app_subdomain}.${var.domain_name}"]
+      hosts = ["prometheus.${var.env}.${var.domain_name}"]
     }
 
     rule {
-      host = "prometheus.${var.app_subdomain}.${var.domain_name}"
+      host = "prometheus.${var.env}.${var.domain_name}"
 
       http {
         path {
@@ -82,7 +83,7 @@ resource "kubernetes_ingress_v1" "grafana_ingress" {
       "alb.ingress.kubernetes.io/healthcheck-path"         = "/api/health"
       "alb.ingress.kubernetes.io/healthcheck-protocol"     = "HTTP"
       "alb.ingress.kubernetes.io/load-balancer-attributes" = "idle_timeout.timeout_seconds=60"
-      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.app_subdomain}-ingress"
+      "alb.ingress.kubernetes.io/tags"                     = "Environment=${local.alb_environment_tag},ManagedBy=Terraform,Name=${var.env}-${var.app_subdomain}-ingress"
       "alb.ingress.kubernetes.io/group.name"               = local.alb_group_name
     }
   }
@@ -98,11 +99,11 @@ resource "kubernetes_ingress_v1" "grafana_ingress" {
     ingress_class_name = "alb"
 
     tls {
-      hosts = ["grafana.${var.app_subdomain}.${var.domain_name}"]
+      hosts = ["grafana.${var.env}.${var.domain_name}"]
     }
 
     rule {
-      host = "grafana.${var.app_subdomain}.${var.domain_name}"
+      host = "grafana.${var.env}.${var.domain_name}"
 
       http {
         path {

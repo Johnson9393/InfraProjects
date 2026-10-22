@@ -1,3 +1,5 @@
+# Wildcard ACM for this env: *.<env>.infralabx.space (dev and prod each get one).
+
 data "aws_route53_zone" "main" {
   name         = var.domain_name
   private_zone = false

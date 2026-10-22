@@ -1,4 +1,5 @@
 # Route 53 aliases for platform ingress (Argo CD, Grafana, Prometheus).
+# Names are <app>.<env>.infralabx.space so dev and prod do not share DNS.
 #
 # kubernetes_ingress_v1.status is empty at create time. Sleep + depends_on
 # does not refresh those attributes. Re-read Ingress after the ALB hostname
@@ -42,7 +43,7 @@ data "aws_lb" "shared_ingress" {
   count = (local.deploy_argocd || local.deploy_monitoring) ? 1 : 0
 
   tags = {
-    Name      = "${var.app_subdomain}-ingress"
+    Name      = "${var.env}-${var.app_subdomain}-ingress"
     ManagedBy = "Terraform"
   }
 
@@ -57,7 +58,7 @@ resource "aws_route53_record" "argocd" {
   count = local.deploy_argocd ? 1 : 0
 
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "argocd.${var.app_subdomain}.${var.domain_name}"
+  name    = "argocd.${var.env}.${var.domain_name}"
   type    = "A"
 
   alias {
@@ -71,7 +72,7 @@ resource "aws_route53_record" "grafana" {
   count = local.deploy_monitoring ? 1 : 0
 
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "grafana.${var.app_subdomain}.${var.domain_name}"
+  name    = "grafana.${var.env}.${var.domain_name}"
   type    = "A"
 
   alias {
@@ -85,7 +86,7 @@ resource "aws_route53_record" "prometheus" {
   count = local.deploy_monitoring ? 1 : 0
 
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = "prometheus.${var.app_subdomain}.${var.domain_name}"
+  name    = "prometheus.${var.env}.${var.domain_name}"
   type    = "A"
 
   alias {

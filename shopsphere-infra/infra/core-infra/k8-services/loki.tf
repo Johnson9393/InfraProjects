@@ -1,5 +1,6 @@
 #---------------------------------------
-# Loki - Centralized logging for ShopSphere services
+# Loki — in-cluster logs for this env (no public hostname).
+# Grafana in the same monitoring namespace reads Loki over cluster DNS.
 #---------------------------------------
 
 resource "helm_release" "loki" {
@@ -20,7 +21,7 @@ resource "helm_release" "loki" {
 
         persistence = {
           enabled          = true
-          storageClassName = "gp2"
+          storageClassName = "gp3"
           accessModes      = ["ReadWriteOnce"]
           size             = "20Gi"
         }

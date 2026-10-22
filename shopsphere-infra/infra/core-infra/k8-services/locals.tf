@@ -1,4 +1,5 @@
-# Defines environment-specific names for Kubernetes platform resources.
+# Env-specific names: namespaces, cluster name, DNS suffix, ALB tags.
+# Argo / ACM / monitoring install when env matches platform_env or enable_* is true.
 locals {
   env_prefix       = "${var.env}-"
   eks_cluster_name = "${local.env_prefix}${var.eks_cluster_name}"
