@@ -1,4 +1,4 @@
-# Dest app-of-apps.
+# Dev app-of-apps.
 # kubectl apply this on the dest cluster, in dest-argocd.
 # It only watches shopsphere/gitops/apps/dev — prod YAML is not in this path.
 apiVersion: argoproj.io/v1alpha1
