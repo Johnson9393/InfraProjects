@@ -180,6 +180,15 @@ locals {
     })
   } : {}
 
+  # Four app databases inside the one Aurora cluster.
+  # Same list for prod now and QA later. Not four Aurora systems.
+  rds_app_databases = toset([
+    "products",
+    "users",
+    "orders",
+    "payments",
+  ])
+
 
   #----------------------------------------------------------------------------
   #

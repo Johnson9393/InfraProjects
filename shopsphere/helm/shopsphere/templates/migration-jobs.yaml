@@ -1,0 +1,20 @@
+# Migration Jobs apply schema changes on the writer before the new pods start.
+{{- if .Values.services.productService.enabled }}
+---
+{{ include "shopsphere.migrationJob" (dict "root" . "component" "product-service" "image" .Values.services.productService.image "env" .Values.services.productService.env "secretEnv" .Values.services.productService.secretEnv "command" (list "./main" "migrate")) }}
+{{- end }}
+
+{{- if .Values.services.userService.enabled }}
+---
+{{ include "shopsphere.migrationJob" (dict "root" . "component" "user-service" "image" .Values.services.userService.image "env" .Values.services.userService.env "secretEnv" .Values.services.userService.secretEnv "command" (list "node" "src/migrate.js")) }}
+{{- end }}
+
+{{- if .Values.services.orderService.enabled }}
+---
+{{ include "shopsphere.migrationJob" (dict "root" . "component" "order-service" "image" .Values.services.orderService.image "env" .Values.services.orderService.env "secretEnv" .Values.services.orderService.secretEnv "command" (list "./main" "migrate")) }}
+{{- end }}
+
+{{- if .Values.services.paymentService.enabled }}
+---
+{{ include "shopsphere.migrationJob" (dict "root" . "component" "payment-service" "image" .Values.services.paymentService.image "env" .Values.services.paymentService.env "secretEnv" .Values.services.paymentService.secretEnv "command" (list "python" "migrate.py")) }}
+{{- end }}

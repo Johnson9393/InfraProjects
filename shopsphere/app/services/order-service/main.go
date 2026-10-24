@@ -43,11 +43,15 @@ func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Connect to database
+	// Connect to the writer. Migrations run only from `main migrate`, before pods serve traffic.
 	db := database.Connect(cfg)
-
-	// Auto migrate models
-	database.Migrate(db)
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := database.ApplyMigrations(db); err != nil {
+			log.WithError(err).Fatal("Failed to apply migrations")
+		}
+		log.Info("Migrations applied")
+		return
+	}
 
 	// Connect to RabbitMQ
 	rabbitMQ := messaging.NewRabbitMQ(cfg)

@@ -63,7 +63,7 @@ resource "aws_eks_node_group" "main" {
 
   # It gives control over how many nodes can be unavilable during node updates rather taking all nodes down at once.
   update_config {
-    max_unavailable = 1 
+    max_unavailable = 1
   }
 
   tags = var.default_tags

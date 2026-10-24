@@ -22,7 +22,7 @@ func setupTestDB() *gorm.DB {
 func setupRouter(db *gorm.DB) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := NewProductHandler(db)
+	h := NewProductHandler(db, nil)
 
 	r.GET("/health", h.HealthCheck)
 	r.GET("/api/v1/products", h.GetAllProducts)

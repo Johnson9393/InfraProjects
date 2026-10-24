@@ -1,0 +1,69 @@
+# Prod overrides. Hosts are one Aurora: writer + reader.
+# Replace the two PLACEHOLDER values after terraform apply
+# from secret prod/shopsphere-rds (host, reader_host).
+
+global:
+  environment: prod
+  namespace: shopsphere-prod
+  awsRegion: us-east-1
+  imagePullPolicy: IfNotPresent
+
+services:
+  productService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-product-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+    env:
+      PRODUCT_DB_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      PRODUCT_DB_READ_HOST: REPLACE_WITH_AURORA_READER_HOST
+      PRODUCT_DB_SSLMODE: require
+
+  userService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-user-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+    env:
+      USER_DB_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      USER_DB_READ_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      USER_DB_SSLMODE: require
+
+  cartService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-cart-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+
+  orderService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-order-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+    env:
+      ORDER_DB_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      ORDER_DB_READ_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      ORDER_DB_SSLMODE: require
+
+  paymentService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-payment-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+    env:
+      PAYMENT_DB_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      PAYMENT_DB_READ_HOST: REPLACE_WITH_AURORA_WRITER_HOST
+      PAYMENT_DB_SSLMODE: require
+
+  notificationService:
+    image:
+      repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-notification-service
+      tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+
+apiGateway:
+  image:
+    repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-api-gateway
+    tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+
+frontend:
+  image:
+    repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-frontend
+    tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+
+seedJob:
+  image: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-seed:fa8888ad546aa91aceda97f03963e1758267fe35

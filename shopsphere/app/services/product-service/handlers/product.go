@@ -14,11 +14,15 @@ import (
 )
 
 type ProductHandler struct {
-	DB *gorm.DB
+	ReadDB  *gorm.DB
+	WriteDB *gorm.DB
 }
 
-func NewProductHandler(db *gorm.DB) *ProductHandler {
-	return &ProductHandler{DB: db}
+func NewProductHandler(write *gorm.DB, read *gorm.DB) *ProductHandler {
+	if read == nil {
+		read = write
+	}
+	return &ProductHandler{WriteDB: write, ReadDB: read}
 }
 
 // GetAllProducts retrieves all products with optional filtering
@@ -29,7 +33,7 @@ func (h *ProductHandler) GetAllProducts(c *gin.Context) {
 	// Record query metric
 	middleware.ProductQueriesTotal.WithLabelValues("list").Inc()
 
-	query := h.DB.Model(&models.Product{})
+	query := h.ReadDB.Model(&models.Product{})
 
 	// Filter by category
 	if category := c.Query("category"); category != "" {
@@ -88,7 +92,7 @@ func (h *ProductHandler) GetProductByID(c *gin.Context) {
 	id := c.Param("id")
 
 	var product models.Product
-	if err := h.DB.First(&product, id).Error; err != nil {
+	if err := h.ReadDB.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
@@ -122,7 +126,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		IsActive:    true,
 	}
 
-	if err := h.DB.Create(&product).Error; err != nil {
+	if err := h.WriteDB.Create(&product).Error; err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			c.JSON(http.StatusConflict, gin.H{"error": "Product with this SKU already exists"})
 			return
@@ -144,7 +148,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
 
 	var product models.Product
-	if err := h.DB.First(&product, id).Error; err != nil {
+	if err := h.WriteDB.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
@@ -189,7 +193,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		product.IsActive = *req.IsActive
 	}
 
-	if err := h.DB.Save(&product).Error; err != nil {
+	if err := h.WriteDB.Save(&product).Error; err != nil {
 		log.WithError(err).Error("Failed to update product")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
 		return
@@ -204,7 +208,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 	id := c.Param("id")
 
 	var product models.Product
-	if err := h.DB.First(&product, id).Error; err != nil {
+	if err := h.WriteDB.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
@@ -214,7 +218,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Delete(&product).Error; err != nil {
+	if err := h.WriteDB.Delete(&product).Error; err != nil {
 		log.WithError(err).Error("Failed to delete product")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
 		return
@@ -235,7 +239,7 @@ func (h *ProductHandler) SearchProducts(c *gin.Context) {
 	var products []models.Product
 	searchPattern := "%" + strings.ToLower(query) + "%"
 
-	if err := h.DB.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ?", searchPattern, searchPattern).
+	if err := h.ReadDB.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ?", searchPattern, searchPattern).
 		Where("is_active = ?", true).
 		Find(&products).Error; err != nil {
 		log.WithError(err).Error("Failed to search products")
@@ -251,7 +255,7 @@ func (h *ProductHandler) GetProductsByCategory(c *gin.Context) {
 	category := c.Param("category")
 
 	var products []models.Product
-	if err := h.DB.Where("category = ? AND is_active = ?", category, true).Find(&products).Error; err != nil {
+	if err := h.ReadDB.Where("category = ? AND is_active = ?", category, true).Find(&products).Error; err != nil {
 		log.WithError(err).Error("Failed to retrieve products by category")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve products"})
 		return
@@ -265,7 +269,7 @@ func (h *ProductHandler) UpdateStock(c *gin.Context) {
 	id := c.Param("id")
 
 	var product models.Product
-	if err := h.DB.First(&product, id).Error; err != nil {
+	if err := h.WriteDB.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
@@ -294,7 +298,7 @@ func (h *ProductHandler) UpdateStock(c *gin.Context) {
 		product.Stock = req.Quantity
 	}
 
-	if err := h.DB.Save(&product).Error; err != nil {
+	if err := h.WriteDB.Save(&product).Error; err != nil {
 		log.WithError(err).Error("Failed to update stock")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update stock"})
 		return
@@ -322,7 +326,7 @@ func (h *ProductHandler) CheckStock(c *gin.Context) {
 	}
 
 	var product models.Product
-	if err := h.DB.First(&product, id).Error; err != nil {
+	if err := h.WriteDB.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
@@ -346,7 +350,7 @@ func (h *ProductHandler) CheckStock(c *gin.Context) {
 func (h *ProductHandler) GetCategories(c *gin.Context) {
 	var categories []string
 
-	if err := h.DB.Model(&models.Product{}).
+	if err := h.ReadDB.Model(&models.Product{}).
 		Distinct("category").
 		Where("is_active = ?", true).
 		Pluck("category", &categories).Error; err != nil {
@@ -360,21 +364,22 @@ func (h *ProductHandler) GetCategories(c *gin.Context) {
 
 // HealthCheck endpoint
 func (h *ProductHandler) HealthCheck(c *gin.Context) {
-	sqlDB, err := h.DB.DB()
-	if err != nil {
+	if err := pingDB(h.WriteDB); err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"status":   "unhealthy",
-			"database": "error",
+			"database": "writer disconnected",
 		})
 		return
 	}
 
-	if err := sqlDB.Ping(); err != nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"status":   "unhealthy",
-			"database": "disconnected",
-		})
-		return
+	if h.ReadDB != h.WriteDB {
+		if err := pingDB(h.ReadDB); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":   "unhealthy",
+				"database": "reader disconnected",
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -382,4 +387,12 @@ func (h *ProductHandler) HealthCheck(c *gin.Context) {
 		"service":  "product-service",
 		"database": "connected",
 	})
+}
+
+func pingDB(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Ping()
 }

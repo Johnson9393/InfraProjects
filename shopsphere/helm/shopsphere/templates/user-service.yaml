@@ -8,6 +8,8 @@ metadata:
   labels:
     {{- include "shopsphere.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: user-service
+  annotations:
+    {{- include "shopsphere.reloaderAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.services.userService.replicas }}
 

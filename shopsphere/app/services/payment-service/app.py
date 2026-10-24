@@ -5,7 +5,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from sqlalchemy import text
-from database import db
+from database import db, database_uri, engine_options, read_host_active
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Histogram, Gauge
 from pythonjsonlogger import jsonlogger
@@ -60,14 +60,10 @@ active_transactions = Gauge(
     'Number of currently active transactions'
 )
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"postgresql://{os.getenv('PAYMENT_DB_USER', 'ecommerce_user')}:"
-    f"{os.getenv('PAYMENT_DB_PASSWORD', 'secure_password_123')}@"
-    f"{os.getenv('PAYMENT_DB_HOST', 'localhost')}:"
-    f"{os.getenv('PAYMENT_DB_PORT', '5432')}/"
-    f"{os.getenv('PAYMENT_DB_NAME', 'payments')}"
-)
+# Database configuration. PAYMENT_DB_HOST is the writer.
+# A separate read host is ignored here so a payment status read cannot miss the row just written.
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri()
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -94,9 +90,8 @@ def health_check():
         }), 503
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        logger.info('Database tables created')
+    if read_host_active():
+        logger.info('PAYMENT_DB_READ_HOST is set; payment reads and writes stay on the writer')
 
     port = int(os.getenv('PORT', 8005))
     logger.info(f'Payment Service starting on port {port}')

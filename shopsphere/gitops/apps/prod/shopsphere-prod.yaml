@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shopsphere-prod
+  namespace: prod-argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/Johnson9393/InfraProjects.git
+      targetRevision: main
+      ref: values
+
+    - repoURL: https://github.com/Johnson9393/InfraProjects.git
+      targetRevision: main
+      path: shopsphere/helm/shopsphere
+      helm:
+        valueFiles:
+          - $values/shopsphere/environments/prod/values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shopsphere-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

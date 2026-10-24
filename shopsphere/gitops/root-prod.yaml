@@ -1,20 +1,20 @@
-# Parent Application (app of apps).
-# This is the only YAML you kubectl-apply once Argo exists.
-# It does not deploy product-service. It deploys the Application files under apps/.
+# Prod app-of-apps.
+# kubectl apply this on the prod cluster, in prod-argocd.
+# It only watches shopsphere/gitops/apps/prod — dest YAML is not in this path.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: shopsphere-app-of-apps
-  namespace: dev-argocd
+  namespace: prod-argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/Johnson9393/InfraProjects.git
     targetRevision: main
-    path: shopsphere/gitops/apps
+    path: shopsphere/gitops/apps/prod
   destination:
     server: https://kubernetes.default.svc
-    namespace: dev-argocd
+    namespace: prod-argocd
   syncPolicy:
     automated:
       prune: true

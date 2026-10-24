@@ -1,15 +1,22 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 type Config struct {
 	Environment     string
 	Port            string
 	DBHost          string
+	DBReadHost      string
 	DBPort          string
 	DBUser          string
 	DBPassword      string
 	DBName          string
+	DBSSLMode       string
+	DBMaxOpen       int
+	DBMaxIdle       int
 	RabbitMQHost    string
 	RabbitMQPort    string
 	RabbitMQUser    string
@@ -24,10 +31,14 @@ func LoadConfig() *Config {
 		Environment:       getEnv("GO_ENV", "development"),
 		Port:              getEnv("PORT", "8004"),
 		DBHost:            getEnv("ORDER_DB_HOST", "localhost"),
+		DBReadHost:        getEnv("ORDER_DB_READ_HOST", ""),
 		DBPort:            getEnv("ORDER_DB_PORT", "5432"),
 		DBUser:            getEnv("ORDER_DB_USER", "ecommerce_user"),
 		DBPassword:        getEnv("ORDER_DB_PASSWORD", "secure_password_123"),
 		DBName:            getEnv("ORDER_DB_NAME", "orders"),
+		DBSSLMode:         getEnv("ORDER_DB_SSLMODE", "disable"),
+		DBMaxOpen:         getEnvInt("ORDER_DB_MAX_OPEN_CONNS", 0),
+		DBMaxIdle:         getEnvInt("ORDER_DB_MAX_IDLE_CONNS", 0),
 		RabbitMQHost:      getEnv("RABBITMQ_HOST", "localhost"),
 		RabbitMQPort:      getEnv("RABBITMQ_PORT", "5672"),
 		RabbitMQUser:      getEnv("RABBITMQ_USER", "guest"),
@@ -44,4 +55,16 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func getEnvInt(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

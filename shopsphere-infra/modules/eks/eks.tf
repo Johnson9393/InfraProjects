@@ -14,9 +14,6 @@ resource "aws_eks_cluster" "main" {
     endpoint_public_access  = var.endpoint_public_access
     public_access_cidrs     = var.public_access_cidrs
 
-    security_group_ids = [
-      aws_security_group.eks_cluster.id
-    ]
   }
 
     # Create service ipv4 cidr for kubernetes services, if not provided, default will be used

@@ -42,11 +42,15 @@ func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Connect to database
-	db := database.Connect(cfg)
-
-	// Auto migrate models
-	database.Migrate(db)
+	// Connect to the writer. Migrations run only from `main migrate`, before pods serve traffic.
+	conns := database.Connect(cfg)
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := database.ApplyMigrations(conns.Writer); err != nil {
+			log.WithError(err).Fatal("Failed to apply migrations")
+		}
+		log.Info("Migrations applied")
+		return
+	}
 
 	// Initialize Gin router
 	if cfg.Environment == "production" {
@@ -77,7 +81,7 @@ func main() {
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Setup routes
-	routes.SetupRoutes(router, db)
+	routes.SetupRoutes(router, conns)
 
 	// Start server
 	port := cfg.Port

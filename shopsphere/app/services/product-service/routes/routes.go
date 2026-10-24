@@ -1,14 +1,14 @@
 package routes
 
 import (
+	"product-service/database"
 	"product-service/handlers"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB) {
-	productHandler := handlers.NewProductHandler(db)
+func SetupRoutes(router *gin.Engine, conns *database.Connections) {
+	productHandler := handlers.NewProductHandler(conns.Writer, conns.Read())
 
 	// Health check
 	router.GET("/health", productHandler.HealthCheck)

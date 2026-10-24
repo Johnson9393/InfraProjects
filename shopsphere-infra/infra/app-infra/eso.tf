@@ -38,7 +38,9 @@ resource "kubernetes_manifest" "external_secrets" {
     }
 
     spec = {
-      refreshInterval = "1h" #every 1hr it ESO will check for updates in the secret and update the k8s secret if there are any changes
+      # ESO re-reads AWS every hour. If the password rotated in Secrets Manager,
+      # the Kubernetes Secret is updated. Reloader then restarts the app pods.
+      refreshInterval = "1h"
 
       secretStoreRef = {
         name = "${var.env}-aws-secrets-manager"

@@ -25,8 +25,10 @@ services:
       PORT: "8001"
       GO_ENV: production
       PRODUCT_DB_HOST: product-db-rw
+      PRODUCT_DB_READ_HOST: product-db-rw
       PRODUCT_DB_PORT: "5432"
       PRODUCT_DB_NAME: products
+      PRODUCT_DB_SSLMODE: disable
       LOG_LEVEL: info
 
     # Database credentials will come from Kubernetes Secrets.
@@ -75,8 +77,10 @@ services:
       PORT: "8002"
       GO_ENV: production
       USER_DB_HOST: user-db-rw
+      USER_DB_READ_HOST: user-db-rw
       USER_DB_PORT: "5432"
       USER_DB_NAME: users
+      USER_DB_SSLMODE: disable
       LOG_LEVEL: info
 
     # Sensitive database and authentication credentials come from Kubernetes Secrets.
@@ -180,8 +184,10 @@ services:
       PORT: "8004"
       GO_ENV: production
       ORDER_DB_HOST: order-db-rw
+      ORDER_DB_READ_HOST: order-db-rw
       ORDER_DB_PORT: "5432"
       ORDER_DB_NAME: orders
+      ORDER_DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       RABBITMQ_HOST: rabbitmq
@@ -250,8 +256,10 @@ services:
       PORT: "8005"
       GO_ENV: production
       PAYMENT_DB_HOST: payment-db-rw
+      PAYMENT_DB_READ_HOST: payment-db-rw
       PAYMENT_DB_PORT: "5432"
       PAYMENT_DB_NAME: payments
+      PAYMENT_DB_SSLMODE: disable
       ORDER_SERVICE_URL: http://order-service:8004
       LOG_LEVEL: info
 

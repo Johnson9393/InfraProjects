@@ -16,7 +16,7 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Connect to database
-	db := database.Connect(cfg)
+	db := database.Connect(cfg).Writer
 
 	// Clear existing products (for development only)
 	db.Exec("TRUNCATE TABLE products RESTART IDENTITY CASCADE")

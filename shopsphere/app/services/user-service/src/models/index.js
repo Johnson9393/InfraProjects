@@ -1,20 +1,23 @@
 const { Sequelize } = require('sequelize');
-const config = require('../config/database');
+const dbConfig = require('../config/database');
 
-const env = process.env.NODE_ENV || 'development';
-const dbConfig = config[env];
+const options = {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  dialect: 'postgres',
+  logging: dbConfig.logging,
+  pool: dbConfig.pool
+};
+
+if (dbConfig.dialectOptions) {
+  options.dialectOptions = dbConfig.dialectOptions;
+}
 
 const sequelize = new Sequelize(
   dbConfig.database,
   dbConfig.username,
   dbConfig.password,
-  {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    dialect: dbConfig.dialect,
-    logging: dbConfig.logging,
-    pool: dbConfig.pool
-  }
+  options
 );
 
 const User = require('./user')(sequelize);

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
+const dbConfig = require('./config/database');
 const routes = require('./routes');
 const logger = require('./utils/logger');
 const { metricsMiddleware, register } = require('./middleware/metrics');
@@ -82,10 +83,9 @@ const startServer = async () => {
     // Test database connection
     await sequelize.authenticate();
     logger.info('Database connection established successfully');
-
-    // Sync database models
-    await sequelize.sync({ alter: true });
-    logger.info('Database models synchronized');
+    if (dbConfig.readHostActive) {
+      logger.info('USER_DB_READ_HOST is set; authentication reads stay on the writer');
+    }
 
     // Start server
     app.listen(PORT, () => {

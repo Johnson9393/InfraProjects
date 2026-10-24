@@ -8,6 +8,8 @@ metadata:
   labels:
     {{- include "shopsphere.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: cart-service
+  annotations:
+    {{- include "shopsphere.reloaderAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.services.cartService.replicas }}
 

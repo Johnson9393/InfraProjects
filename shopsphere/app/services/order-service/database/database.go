@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"order-service/config"
-	"order-service/models"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,13 +13,36 @@ import (
 )
 
 func Connect(cfg *config.Config) *gorm.DB {
+	readHost := strings.TrimSpace(cfg.DBReadHost)
+	if readHost != "" && readHost != cfg.DBHost {
+		log.WithField("read_host", readHost).Info("order reads and writes stay on the writer so a replica cannot hide an order that was just created")
+	}
+
+	sslmode := cfg.DBSSLMode
+	if sslmode == "" {
+		sslmode = "disable"
+	}
+
+	maxOpen := cfg.DBMaxOpen
+	if maxOpen <= 0 {
+		maxOpen = 100
+	}
+	maxIdle := cfg.DBMaxIdle
+	if maxIdle <= 0 {
+		maxIdle = 10
+	}
+	if maxIdle > maxOpen {
+		maxIdle = maxOpen
+	}
+
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		cfg.DBHost,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-		cfg.DBPort,
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
+		dsnValue(cfg.DBHost),
+		dsnValue(cfg.DBUser),
+		dsnValue(cfg.DBPassword),
+		dsnValue(cfg.DBName),
+		dsnValue(cfg.DBPort),
+		dsnValue(sslmode),
 	)
 
 	var db *gorm.DB
@@ -53,29 +76,16 @@ func Connect(cfg *config.Config) *gorm.DB {
 		log.WithError(err).Fatal("Failed to get database instance")
 	}
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxIdleConns(maxIdle)
+	sqlDB.SetMaxOpenConns(maxOpen)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	return db
 }
 
-func Migrate(db *gorm.DB) {
-	log.Info("Running database migrations...")
-
-	if db.Migrator().HasTable(&models.Order{}) {
-		log.Info("Orders schema already exists, skipping migration")
-		return
+func dsnValue(v string) string {
+	if !strings.ContainsAny(v, " '\\") {
+		return v
 	}
-
-	err := db.AutoMigrate(
-		&models.Order{},
-		&models.OrderItem{},
-	)
-
-	if err != nil {
-		log.WithError(err).Fatal("Failed to run migrations")
-	}
-
-	log.Info("Database migrations completed successfully")
+	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
 }
