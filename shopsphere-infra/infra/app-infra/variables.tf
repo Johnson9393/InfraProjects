@@ -62,7 +62,7 @@ variable "environments" {
       namespace         = "shopsphere"
       subdomain         = "shop"
       seed_job_enabled  = true
-      service_replicas  = 1
+      service_replicas  = 2
     }
   }
 }

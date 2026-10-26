@@ -1,6 +1,7 @@
 # One Amazon MQ RabbitMQ cluster for prod ShopSphere.
 # CLUSTER_MULTI_AZ is three brokers in three AZs. AWS requires mq.m5.large
 # for that mode. Dev skips this and keeps the in-cluster StatefulSet.
+# element () will take out the item from a list. usually we use element to take out a value based on postion from a list
 
 locals {
   amazonmq_amqps_endpoint = local.amazonmq_enabled ? try(aws_mq_broker.rabbitmq[0].instances[0].endpoints[0], "") : ""
