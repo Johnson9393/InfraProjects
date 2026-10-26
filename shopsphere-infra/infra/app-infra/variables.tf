@@ -244,8 +244,21 @@ variable "cnpg_enable_pod_monitor" {
 #
 #-----------------------------------------------------------------------------
 variable "redis_enabled" {
-  type    = bool
-  default = true
+  description = "Run Redis as an in-cluster pod. Prod ignores this and uses ElastiCache."
+  type        = bool
+  default     = true
+}
+
+variable "elasticache_node_type" {
+  description = "ElastiCache node class for prod Redis. Primary and replica use the same class."
+  type        = string
+  default     = "cache.t3.micro"
+}
+
+variable "elasticache_engine_version" {
+  description = "Redis engine version for prod ElastiCache."
+  type        = string
+  default     = "7.1"
 }
 
 variable "redis_image" {

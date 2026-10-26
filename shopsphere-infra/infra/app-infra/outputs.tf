@@ -8,6 +8,16 @@ output "ecr_repository_urls" {
   }
 }
 
+output "elasticache_redis_primary_endpoint" {
+  description = "Prod ElastiCache Redis primary hostname. Use this as REDIS_HOST."
+  value       = local.elasticache_enabled ? aws_elasticache_replication_group.redis[0].primary_endpoint_address : null
+}
+
+output "elasticache_redis_reader_endpoint" {
+  description = "Prod ElastiCache Redis reader hostname."
+  value       = local.elasticache_enabled ? aws_elasticache_replication_group.redis[0].reader_endpoint_address : null
+}
+
 # Exposes ECR repository names for the GitHub OIDC bootstrap.
 # Reference this output when configuring the OIDC IAM policy to
 # restrict GitHub Actions image-push permissions to repositories

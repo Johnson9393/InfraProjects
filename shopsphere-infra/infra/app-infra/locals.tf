@@ -12,6 +12,10 @@ locals {
   )
   alb_group_name = var.alb_group_name
 
+  # Prod uses ElastiCache Redis. Dev keeps the in-cluster Redis pod.
+  elasticache_enabled     = var.env == "prod"
+  redis_incluster_enabled = var.redis_enabled && !local.elasticache_enabled
+
   # ECR repository names for all ShopSphere application components.
   ecr_repos = [
     for repo in [
@@ -111,9 +115,17 @@ locals {
       password = random_password.db[var.env].result
     }
 
-    "redis-credentials" = {
-      password = random_password.redis[var.env].result
-    }
+    "redis-credentials" = merge(
+      {
+        password = random_password.redis[var.env].result
+      },
+      local.elasticache_enabled ? {
+        host        = aws_elasticache_replication_group.redis[0].primary_endpoint_address
+        reader_host = aws_elasticache_replication_group.redis[0].reader_endpoint_address
+        port        = aws_elasticache_replication_group.redis[0].port
+        engine      = "redis"
+      } : {}
+    )
 
     "rabbitmq-credentials" = {
       username = "rabbitmq_user"

@@ -1,11 +1,14 @@
 const redis = require('redis');
 const logger = require('../utils/logger');
 
+const redisTlsEnabled = process.env.REDIS_TLS === 'true' || process.env.REDIS_TLS === '1';
+
 const redisConfig = {
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || 6379,
     connectTimeout: 10000,
+    tls: redisTlsEnabled,
     reconnectStrategy: (retries) => {
       if (retries > 10) {
         logger.error('Redis max reconnection attempts reached');

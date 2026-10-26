@@ -136,12 +136,13 @@ resource "kubernetes_manifest" "cnpg_cluster" {
 
 
 # ------------------------------------------------------------------------------
-# Redis Configuration
-# Retrieves credentials and provisions the Redis database and internal Service.
+# Redis Configuration — Dev only
+# Prod uses ElastiCache in elasticache-redis.tf. local.redis_incluster_enabled
+# is false there, so this Deployment and Service are skipped.
 # ------------------------------------------------------------------------------
 
 data "kubernetes_secret_v1" "redis_credentials" {
-  count = var.redis_enabled ? 1 : 0
+  count = local.redis_incluster_enabled ? 1 : 0
   metadata {
     name      = "redis-credentials"
     namespace = local.cluster_namespace
@@ -155,7 +156,7 @@ data "kubernetes_secret_v1" "redis_credentials" {
 }
 
 resource "kubernetes_deployment_v1" "redis" {
-  count = var.redis_enabled ? 1 : 0
+  count = local.redis_incluster_enabled ? 1 : 0
   metadata {
     name      = "redis"
     namespace = local.cluster_namespace
@@ -248,7 +249,7 @@ resource "kubernetes_deployment_v1" "redis" {
 }
 
 resource "kubernetes_service_v1" "redis" {
-  count = var.redis_enabled ? 1 : 0
+  count = local.redis_incluster_enabled ? 1 : 0
   metadata {
     name      = "redis"
     namespace = local.cluster_namespace

@@ -135,6 +135,7 @@ services:
       GO_ENV: production
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      REDIS_TLS: "false"
       PRODUCT_SERVICE_URL: http://product-service:8001
       LOG_LEVEL: info
 
@@ -190,6 +191,7 @@ services:
       ORDER_DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      REDIS_TLS: "false"
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
       CART_SERVICE_URL: http://cart-service:8003
