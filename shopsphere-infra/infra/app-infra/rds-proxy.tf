@@ -143,7 +143,7 @@ resource "aws_db_proxy_default_target_group" "shopsphere" {
 resource "aws_db_proxy_target" "shopsphere" {
   count = local.rds_enabled ? 1 : 0
 
-  db_proxy_name          = aws_db_proxy.shopsphere[0].name
-  target_group_name      = aws_db_proxy_default_target_group.shopsphere[0].name
-  db_cluster_identifier  = aws_rds_cluster.shopsphere[0].id
+  db_proxy_name         = aws_db_proxy.shopsphere[0].name
+  target_group_name     = aws_db_proxy_default_target_group.shopsphere[0].name
+  db_cluster_identifier = aws_rds_cluster.shopsphere[0].id
 }

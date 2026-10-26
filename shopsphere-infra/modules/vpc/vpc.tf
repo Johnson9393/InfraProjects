@@ -1,3 +1,11 @@
+locals {
+  # Public subnet index for each AZ. Multi-NAT private routes use this so a
+  # private subnet follows the NAT in its own zone, not the subnet list order.
+  public_subnet_index_by_az = {
+    for index, subnet in var.public_subnets : subnet.availability_zone => index
+  }
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = var.enable_dns_hostnames
@@ -21,8 +29,8 @@ resource "aws_subnet" "public_subnets" {
   map_public_ip_on_launch = true
 
   tags = merge(var.default_tags, {
-    Name                        = "${var.vpc_name}-${var.public_subnets[count.index].prefix}"
-    "kubernetes.io/role/elb"    = "1"
+    Name                     = "${var.vpc_name}-${var.public_subnets[count.index].prefix}"
+    "kubernetes.io/role/elb" = "1"
   })
 }
 
@@ -127,12 +135,13 @@ resource "aws_route" "route_ngw" {
   nat_gateway_id         = aws_nat_gateway.ngw[count.index].id
 }
 
-# This handle multi NAT association to multi route tables in multi AZ regions
+# Single NAT: every private subnet uses route table 0.
+# Multi NAT: each private subnet uses the route table whose NAT sits in the same AZ.
 resource "aws_route_table_association" "private_rt_association" {
   count = length(var.private_subnets)
 
   subnet_id      = aws_subnet.private_subnets[count.index].id
-  route_table_id = var.need_single_ngw ? aws_route_table.private_rt[0].id : aws_route_table.private_rt[count.index].id
+  route_table_id = aws_route_table.private_rt[var.need_single_ngw ? 0 : local.public_subnet_index_by_az[var.private_subnets[count.index].availability_zone]].id
 }
 
 

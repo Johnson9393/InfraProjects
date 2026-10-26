@@ -57,8 +57,10 @@ rds_subnets = [
   }
 ]
 
+# One NAT gateway per Availability Zone. Each private subnet sends
+# egress through the NAT in its own zone. Dev keeps a single NAT.
 need_ngw        = true
-need_single_ngw = true
+need_single_ngw = false
 
 
 # ============================================================================

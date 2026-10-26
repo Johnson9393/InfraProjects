@@ -1,6 +1,8 @@
 -- Run this after rds-init-databases.sql
 -- as shopsphere_admin, still connected to "postgres".
--- No passwords in this file. We set passwords next, from Secrets Manager.
+-- No passwords in this file. Set each user password once from Secrets Manager
+-- (prod/product-db-credentials, user-db-credentials, order-db-credentials,
+-- payment-db-credentials). After that, weekly rotation updates them.
 
 CREATE USER product_user WITH LOGIN;
 CREATE USER user_user WITH LOGIN;

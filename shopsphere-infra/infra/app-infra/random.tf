@@ -7,6 +7,14 @@ resource "random_password" "db" {
   special = false
 }
 
+# One password per prod Aurora app user. Dest still uses random_password.db.
+resource "random_password" "rds_app" {
+  for_each = local.rds_enabled ? local.rds_app_secret_names : toset([])
+
+  length  = 24
+  special = false
+}
+
 # Generates one independent Redis password for each environment.
 resource "random_password" "redis" {
   for_each = local.secret_envs

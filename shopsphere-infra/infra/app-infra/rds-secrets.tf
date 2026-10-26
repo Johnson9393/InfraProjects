@@ -20,13 +20,19 @@ resource "aws_secretsmanager_secret_version" "rds" {
   secret_id = aws_secretsmanager_secret.rds[0].id
 
   secret_string = jsonencode({
-    username    = aws_rds_cluster.shopsphere[0].master_username
-    password    = random_password.db[var.env].result
-    host        = aws_rds_cluster.shopsphere[0].endpoint
-    reader_host = aws_rds_cluster.shopsphere[0].reader_endpoint
-    proxy_host  = aws_db_proxy.shopsphere[0].endpoint
-    port        = aws_rds_cluster.shopsphere[0].port
-    dbname      = aws_rds_cluster.shopsphere[0].database_name
-    engine      = "aurora-postgresql"
+    username            = aws_rds_cluster.shopsphere[0].master_username
+    password            = random_password.db[var.env].result
+    host                = aws_rds_cluster.shopsphere[0].endpoint
+    reader_host         = aws_rds_cluster.shopsphere[0].reader_endpoint
+    proxy_host          = aws_db_proxy.shopsphere[0].endpoint
+    port                = aws_rds_cluster.shopsphere[0].port
+    dbname              = aws_rds_cluster.shopsphere[0].database_name
+    engine              = "postgres"
+    dbClusterIdentifier = aws_rds_cluster.shopsphere[0].cluster_identifier
   })
+
+  # Rotation Lambda updates the password. Do not let Terraform put the old one back.
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }

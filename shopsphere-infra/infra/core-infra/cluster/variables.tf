@@ -78,7 +78,7 @@ variable "need_ngw" {
 }
 
 variable "need_single_ngw" {
-  description = "Whether to use a single NAT Gateway"
+  description = "Use one shared NAT gateway. False creates one NAT gateway per Availability Zone."
   type        = bool
 }
 

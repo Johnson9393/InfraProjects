@@ -38,9 +38,16 @@ variable "private_subnets" {
   description = "List of private subnets"
 
   validation {
-    condition = (var.need_single_ngw || length(var.private_subnets) == length(var.public_subnets))
+    condition = var.need_single_ngw || (
+      length(var.private_subnets) == length(var.public_subnets) &&
+      length(distinct([for subnet in var.public_subnets : subnet.availability_zone])) == length(var.public_subnets) &&
+      alltrue([
+        for subnet in var.private_subnets :
+        contains([for public_subnet in var.public_subnets : public_subnet.availability_zone], subnet.availability_zone)
+      ])
+    )
 
-    error_message = "When using multiple NAT Gateways, public and private subnet counts must be equal."
+    error_message = "When using multiple NAT Gateways, public and private subnet counts must be equal, each public subnet must be in its own Availability Zone, and each private subnet must have a public subnet in that same zone."
   }
 }
 
@@ -69,7 +76,7 @@ variable "need_ngw" {
 
 variable "need_single_ngw" {
   type        = bool
-  description = "need only 1 ngw"
+  description = "Use one shared NAT gateway. Set false for one NAT gateway per Availability Zone."
 }
 
 variable "default_tags" {

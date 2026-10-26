@@ -5,4 +5,4 @@ enable_cluster_resources = true
 platform_env   = "prod"
 alb_group_name = "shopsphere-prod-alb"
 
-storage_class      = "gp3"
+storage_class = "gp3"

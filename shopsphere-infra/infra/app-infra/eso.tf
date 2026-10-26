@@ -69,5 +69,6 @@ resource "kubernetes_manifest" "external_secrets" {
     kubernetes_namespace_v1.shopsphere,
     kubernetes_manifest.cluster_secret_store,
     aws_secretsmanager_secret_version.shopsphere,
+    aws_secretsmanager_secret_version.rds_app,
   ]
 }

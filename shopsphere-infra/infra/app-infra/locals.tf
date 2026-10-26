@@ -189,6 +189,14 @@ locals {
     "payments",
   ])
 
+  # Secrets Manager keys that AWS rotates on prod (one user per service).
+  rds_app_secret_names = toset([
+    "product-db-credentials",
+    "user-db-credentials",
+    "order-db-credentials",
+    "payment-db-credentials",
+  ])
+
 
   #----------------------------------------------------------------------------
   #
