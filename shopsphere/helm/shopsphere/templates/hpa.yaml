@@ -1,0 +1,46 @@
+{{- if .Values.autoscaling.enabled }}
+{{- $root := . }}
+{{- $fullName := include "shopsphere.fullname" . }}
+{{- $workloads := list
+  (dict "enabled" .Values.services.productService.enabled "name" (printf "%s-product-service" $fullName))
+  (dict "enabled" .Values.services.userService.enabled "name" (printf "%s-user-service" $fullName))
+  (dict "enabled" .Values.services.cartService.enabled "name" (printf "%s-cart-service" $fullName))
+  (dict "enabled" .Values.services.orderService.enabled "name" (printf "%s-order-service" $fullName))
+  (dict "enabled" .Values.services.paymentService.enabled "name" (printf "%s-payment-service" $fullName))
+  (dict "enabled" .Values.services.notificationService.enabled "name" (printf "%s-notification-service" $fullName))
+  (dict "enabled" .Values.apiGateway.enabled "name" (printf "%s-api-gateway" $fullName))
+  (dict "enabled" .Values.frontend.enabled "name" (printf "%s-frontend" $fullName))
+}}
+{{- range $workload := $workloads }}
+{{- if $workload.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $workload.name }}
+  namespace: {{ include "shopsphere.namespace" $root }}
+  labels:
+    {{- include "shopsphere.commonLabels" $root | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $workload.name }}
+  minReplicas: {{ $root.Values.autoscaling.minReplicas }}
+  maxReplicas: {{ $root.Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $root.Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $root.Values.autoscaling.targetMemoryUtilizationPercentage }}
+{{- end }}
+{{- end }}
+{{- end }}

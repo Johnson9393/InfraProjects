@@ -10,6 +10,13 @@ global:
   awsRegion: us-east-1
   imagePullPolicy: IfNotPresent
 
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
 services:
   productService:
     replicas: 2

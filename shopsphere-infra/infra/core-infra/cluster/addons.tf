@@ -19,3 +19,9 @@ resource "aws_eks_addon" "pod_identity_agent" {
   cluster_name = module.eks.cluster_name
   addon_name   = "eks-pod-identity-agent"
 }
+
+# Metrics Server is required for Horizontal Pod Autoscaler CPU metrics.
+resource "aws_eks_addon" "metrics_server" {
+  cluster_name = module.eks.cluster_name
+  addon_name   = "metrics-server"
+}

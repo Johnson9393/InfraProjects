@@ -5,6 +5,15 @@ global:
   awsRegion: us-east-1
   imagePullPolicy: IfNotPresent
 
+# HPA is off in this default (dev). Prod turns it on.
+# When enabled, HPA owns replica count. minReplicas keeps the HA floor.
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
 # Configuration for ShopSphere backend microservices.
 services:
   productService:
