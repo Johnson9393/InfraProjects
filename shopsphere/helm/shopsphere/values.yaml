@@ -194,6 +194,7 @@ services:
       REDIS_TLS: "false"
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
+      RABBITMQ_TLS: "false"
       CART_SERVICE_URL: http://cart-service:8003
       PRODUCT_SERVICE_URL: http://product-service:8001
       LOG_LEVEL: info
@@ -326,6 +327,7 @@ services:
       FLASK_ENV: production
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
+      RABBITMQ_TLS: "false"
       LOG_LEVEL: info
       SES_SENDER_EMAIL: "johnson.kudumula09@gmail.com"
       AWS_REGION: "us-east-1"

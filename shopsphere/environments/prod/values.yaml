@@ -1,7 +1,8 @@
 # Prod overrides. Hosts are one Aurora: writer + reader.
 # Replace the PLACEHOLDER values after terraform apply
 # from secret prod/shopsphere-rds (host, reader_host) and
-# from output elasticache_redis_primary_endpoint (REDIS_HOST).
+# from output elasticache_redis_primary_endpoint (REDIS_HOST) and
+# from output amazonmq_rabbitmq_host (RABBITMQ_HOST).
 
 global:
   environment: prod
@@ -48,6 +49,9 @@ services:
       REDIS_HOST: REPLACE_WITH_ELASTICACHE_PRIMARY_HOST
       REDIS_PORT: "6379"
       REDIS_TLS: "true"
+      RABBITMQ_HOST: REPLACE_WITH_AMAZONMQ_HOST
+      RABBITMQ_PORT: "5671"
+      RABBITMQ_TLS: "true"
 
   paymentService:
     image:
@@ -62,6 +66,10 @@ services:
     image:
       repository: 023192525105.dkr.ecr.us-east-1.amazonaws.com/prod-shopsphere-notification-service
       tag: "fa8888ad546aa91aceda97f03963e1758267fe35"
+    env:
+      RABBITMQ_HOST: REPLACE_WITH_AMAZONMQ_HOST
+      RABBITMQ_PORT: "5671"
+      RABBITMQ_TLS: "true"
 
 apiGateway:
   image:

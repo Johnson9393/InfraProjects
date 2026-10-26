@@ -287,8 +287,21 @@ variable "redis_resources" {
 #-----------------------------------------------------------------------------
 
 variable "rabbitmq_enabled" {
-  type    = bool
-  default = true
+  description = "Run RabbitMQ as an in-cluster StatefulSet. Prod ignores this and uses Amazon MQ."
+  type        = bool
+  default     = true
+}
+
+variable "mq_instance_type" {
+  description = "Amazon MQ instance class. CLUSTER_MULTI_AZ requires mq.m5.large or larger."
+  type        = string
+  default     = "mq.m5.large"
+}
+
+variable "mq_engine_version" {
+  description = "RabbitMQ engine version for Amazon MQ."
+  type        = string
+  default     = "3.13.7"
 }
 
 variable "rabbitmq_image" {

@@ -28,6 +28,11 @@ public_subnets = [
     cidr              = "10.1.2.0/24"
     availability_zone = "us-east-1b"
     prefix            = "public-2"
+  },
+  {
+    cidr              = "10.1.3.0/24"
+    availability_zone = "us-east-1c"
+    prefix            = "public-3"
   }
 ]
 
@@ -41,6 +46,11 @@ private_subnets = [
     cidr              = "10.1.12.0/24"
     availability_zone = "us-east-1b"
     prefix            = "private-2"
+  },
+  {
+    cidr              = "10.1.13.0/24"
+    availability_zone = "us-east-1c"
+    prefix            = "private-3"
   }
 ]
 

@@ -9,3 +9,6 @@ storage_class = "gp3"
 
 # In-cluster Redis stays off. Prod uses ElastiCache in elasticache-redis.tf.
 redis_enabled = false
+
+# In-cluster RabbitMQ stays off. Prod uses Amazon MQ in amazonmq-rabbitmq.tf.
+rabbitmq_enabled = false

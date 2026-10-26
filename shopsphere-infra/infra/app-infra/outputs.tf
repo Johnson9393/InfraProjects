@@ -18,6 +18,16 @@ output "elasticache_redis_reader_endpoint" {
   value       = local.elasticache_enabled ? aws_elasticache_replication_group.redis[0].reader_endpoint_address : null
 }
 
+output "amazonmq_rabbitmq_host" {
+  description = "Prod Amazon MQ RabbitMQ hostname. Use this as RABBITMQ_HOST."
+  value       = local.amazonmq_enabled ? local.amazonmq_host : null
+}
+
+output "amazonmq_rabbitmq_amqps_endpoint" {
+  description = "Prod Amazon MQ AMQPS endpoint including scheme and port."
+  value       = local.amazonmq_enabled ? local.amazonmq_amqps_endpoint : null
+}
+
 # Exposes ECR repository names for the GitHub OIDC bootstrap.
 # Reference this output when configuring the OIDC IAM policy to
 # restrict GitHub Actions image-push permissions to repositories

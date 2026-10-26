@@ -279,12 +279,13 @@ resource "kubernetes_service_v1" "redis" {
 
 
 # ------------------------------------------------------------------------------
-# RabbitMQ Configuration
-# Deploys RabbitMQ as a StatefulSet with persistent storage and an internal Service.
+# RabbitMQ Configuration — Dev only
+# Prod uses Amazon MQ in amazonmq-rabbitmq.tf. local.rabbitmq_incluster_enabled
+# is false there, so this StatefulSet and Service are skipped.
 # ------------------------------------------------------------------------------
 
 data "kubernetes_secret_v1" "rabbitmq_credentials" {
-  count = var.rabbitmq_enabled ? 1 : 0
+  count = local.rabbitmq_incluster_enabled ? 1 : 0
 
   metadata {
     name      = "rabbitmq-credentials"
@@ -299,7 +300,7 @@ data "kubernetes_secret_v1" "rabbitmq_credentials" {
 }
 
 resource "kubernetes_manifest" "rabbitmq" {
-  count = var.rabbitmq_enabled ? 1 : 0
+  count = local.rabbitmq_incluster_enabled ? 1 : 0
 
   manifest = {
     apiVersion = "apps/v1"
@@ -436,7 +437,7 @@ resource "kubernetes_manifest" "rabbitmq" {
 }
 
 resource "kubernetes_service_v1" "rabbitmq" {
-  count = var.rabbitmq_enabled ? 1 : 0
+  count = local.rabbitmq_incluster_enabled ? 1 : 0
 
   metadata {
     name      = "rabbitmq"

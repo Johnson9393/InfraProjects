@@ -13,7 +13,7 @@
 data "aws_partition" "current" {}
 
 data "aws_subnets" "private" {
-  count = (local.rds_enabled || local.elasticache_enabled) ? 1 : 0
+  count = (local.rds_enabled || local.elasticache_enabled || local.amazonmq_enabled) ? 1 : 0
 
   filter {
     name   = "vpc-id"

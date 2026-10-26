@@ -16,6 +16,10 @@ locals {
   elasticache_enabled     = var.env == "prod"
   redis_incluster_enabled = var.redis_enabled && !local.elasticache_enabled
 
+  # Prod uses Amazon MQ (managed RabbitMQ). Dev keeps the in-cluster broker.
+  amazonmq_enabled           = var.env == "prod"
+  rabbitmq_incluster_enabled = var.rabbitmq_enabled && !local.amazonmq_enabled
+
   # ECR repository names for all ShopSphere application components.
   ecr_repos = [
     for repo in [
@@ -127,10 +131,17 @@ locals {
       } : {}
     )
 
-    "rabbitmq-credentials" = {
-      username = "rabbitmq_user"
-      password = random_password.rabbitmq[var.env].result
-    }
+    "rabbitmq-credentials" = merge(
+      {
+        username = "rabbitmq_user"
+        password = random_password.rabbitmq[var.env].result
+      },
+      local.amazonmq_enabled ? {
+        host   = local.amazonmq_host
+        port   = 5671
+        engine = "rabbitmq"
+      } : {}
+    )
 
     "user-service-credentials" = {
       jwt_secret = random_password.jwt[var.env].result

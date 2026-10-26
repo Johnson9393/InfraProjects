@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import ssl
 import threading
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -92,16 +93,21 @@ def process_order_event(event_data):
 def rabbitmq_consumer():
     """RabbitMQ consumer that listens for order events"""
     try:
-        connection_params = pika.ConnectionParameters(
-            host=os.getenv('RABBITMQ_HOST', 'localhost'),
-            port=int(os.getenv('RABBITMQ_PORT', 5672)),
-            credentials=pika.PlainCredentials(
+        ssl_enabled = os.getenv('RABBITMQ_TLS', 'false').lower() in ('true', '1')
+        connection_kwargs = {
+            'host': os.getenv('RABBITMQ_HOST', 'localhost'),
+            'port': int(os.getenv('RABBITMQ_PORT', 5672)),
+            'credentials': pika.PlainCredentials(
                 os.getenv('RABBITMQ_USER', 'guest'),
                 os.getenv('RABBITMQ_PASSWORD', 'guest')
             ),
-            heartbeat=600,
-            blocked_connection_timeout=300
-        )
+            'heartbeat': 600,
+            'blocked_connection_timeout': 300,
+        }
+        if ssl_enabled:
+            connection_kwargs['ssl_options'] = pika.SSLOptions(ssl.create_default_context())
+
+        connection_params = pika.ConnectionParameters(**connection_kwargs)
 
         connection = pika.BlockingConnection(connection_params)
         channel = connection.channel()

@@ -21,6 +21,7 @@ type Config struct {
 	RabbitMQPort    string
 	RabbitMQUser    string
 	RabbitMQPass    string
+	RabbitMQTLS     bool
 	JWTSecret       string
 	CartServiceURL  string
 	ProductServiceURL string
@@ -43,6 +44,7 @@ func LoadConfig() *Config {
 		RabbitMQPort:      getEnv("RABBITMQ_PORT", "5672"),
 		RabbitMQUser:      getEnv("RABBITMQ_USER", "guest"),
 		RabbitMQPass:      getEnv("RABBITMQ_PASSWORD", "guest"),
+		RabbitMQTLS:       getEnv("RABBITMQ_TLS", "false") == "true" || getEnv("RABBITMQ_TLS", "false") == "1",
 		JWTSecret:         getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-this-in-production"),
 		CartServiceURL:    getEnv("CART_SERVICE_URL", "http://localhost:8003"),
 		ProductServiceURL: getEnv("PRODUCT_SERVICE_URL", "http://localhost:8001"),

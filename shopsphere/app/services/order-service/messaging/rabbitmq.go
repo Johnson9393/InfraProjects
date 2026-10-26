@@ -31,7 +31,13 @@ func NewRabbitMQ(cfg *config.Config) *RabbitMQ {
 }
 
 func (r *RabbitMQ) Connect() error {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
+	scheme := "amqp"
+	if r.config.RabbitMQTLS {
+		scheme = "amqps"
+	}
+
+	url := fmt.Sprintf("%s://%s:%s@%s:%s/",
+		scheme,
 		r.config.RabbitMQUser,
 		r.config.RabbitMQPass,
 		r.config.RabbitMQHost,
