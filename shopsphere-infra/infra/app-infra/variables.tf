@@ -157,9 +157,9 @@ variable "cnpg_clusters" {
 }
 
 variable "cnpg_instances" {
-  description = "Number of PostgreSQL instances per CNPG cluster."
+  description = "PostgreSQL pods per non-prod CNPG cluster. 3 keeps a primary and a replica after one zone is lost."
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "cnpg_image" {
@@ -269,6 +269,24 @@ variable "redis_max_memory" {
   default = "256mb"
 }
 
+variable "redis_replicas" {
+  description = "Non-prod Redis data pods. Three, spread across the two zones, so each zone holds a copy."
+  type        = number
+  default     = 3
+}
+
+variable "redis_sentinel_replicas" {
+  description = "Sentinel pods. They keep no disk, so they can move to the zone that is still up and promote the surviving Redis."
+  type        = number
+  default     = 3
+}
+
+variable "redis_storage" {
+  description = "Disk for each non-prod Redis pod."
+  type        = string
+  default     = "1Gi"
+}
+
 variable "redis_resources" {
   type = object({
     requests = object({ cpu = string, memory = string })
@@ -306,6 +324,12 @@ variable "mq_engine_version" {
 
 variable "rabbitmq_image" {
   default = "rabbitmq:3.12-management-alpine"
+}
+
+variable "rabbitmq_replicas" {
+  description = "Non-prod RabbitMQ brokers. Two, spread across the two zones, with every queue mirrored."
+  type        = number
+  default     = 2
 }
 
 variable "rabbitmq_storage" {

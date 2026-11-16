@@ -1,0 +1,130 @@
+
+name: ShopSphere Infrastructure Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Select infrastructure environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - uat
+          - preprod
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: infra
+
+jobs:
+
+  terraform-plan:
+
+    runs-on: ubuntu-latest
+
+    outputs:
+      role_arn: ${{ steps.config.outputs.role_arn }}
+
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Environment
+        id: config
+        shell: bash
+        env:
+          NONPROD_ROLE: ${{ vars.NONPROD_TERRAFORM_ROLE_ARN }}
+          PROD_ROLE: ${{ vars.PROD_TERRAFORM_ROLE_ARN }}
+        run: |
+          ENV="${{ inputs.environment }}"
+
+          case "$ENV" in
+            dev|qa|uat)
+              echo "role_arn=$NONPROD_ROLE" >> "$GITHUB_OUTPUT"
+              ;;
+            preprod|prod)
+              echo "role_arn=$PROD_ROLE" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.config.outputs.role_arn }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          terraform init -reconfigure \
+            -backend-config=environments/${{ inputs.environment }}/backend.hcl
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var-file=environments/${{ inputs.environment }}/${{ inputs.environment }}.tfvars \
+            -out=tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra/tfplan
+          retention-days: 1
+
+  terraform-apply:
+
+    needs: terraform-plan
+
+    runs-on: ubuntu-latest
+
+    environment: ${{ inputs.environment }}
+
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ needs.terraform-plan.outputs.role_arn }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          terraform init -reconfigure \
+            -backend-config=environments/${{ inputs.environment }}/backend.hcl
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan

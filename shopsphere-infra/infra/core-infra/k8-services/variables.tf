@@ -138,4 +138,21 @@ variable "eso_chart_version" {
   default     = "2.13.0"
 }
 
+# ---------------------------------------------------------------------------
+# Karpenter — node autoscaling
+# ---------------------------------------------------------------------------
+
+variable "enable_karpenter" {
+  description = "Deploy Karpenter on this cluster. Null means install on prod only."
+  type        = bool
+  default     = null
+  nullable    = true
+}
+
+variable "karpenter_chart_version" {
+  description = "Karpenter Helm chart version. Must support this cluster's Kubernetes version."
+  type        = string
+  default     = "1.15.1"
+}
+
 

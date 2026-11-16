@@ -11,6 +11,7 @@ eks_cluster_name = "shopsphere"
 platform_env      = "prod"
 enable_argocd     = true
 enable_monitoring = true
+enable_karpenter  = true
 
 # Own ALB group so prod ingresses do not share a name with dev.
 alb_group_name = "shopsphere-prod-alb"

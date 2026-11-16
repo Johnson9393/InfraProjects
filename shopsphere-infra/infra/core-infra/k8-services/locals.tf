@@ -14,6 +14,11 @@ locals {
   deploy_acm        = var.env == local.platform_env
   deploy_argocd     = coalesce(var.enable_argocd, var.env == local.platform_env)
   deploy_monitoring = coalesce(var.enable_monitoring, var.env == local.platform_env)
+  deploy_karpenter  = coalesce(var.enable_karpenter, var.env == "prod")
+
+  karpenter_namespace  = "kube-system"
+  karpenter_sa         = "karpenter"
+  karpenter_queue_name = "Karpenter-${local.eks_cluster_name}"
 
   acm_cert_arn = local.deploy_acm ? aws_acm_certificate_validation.env[0].certificate_arn : null
 
